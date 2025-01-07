@@ -7,7 +7,7 @@ import paho.mqtt.client as mqtt
 
 # Configuration MQTT
 BROKER = os.getenv("BROKER", "mosquitto")
-PORT = os.getenv("PORT", "1883")
+PORT = os.getenv("PORT", 1883)
 TOPIC = os.getenv("TOPIC", "sensors/temperature")
 SENSOR_ID = os.getenv("HOSTNAME", "temp_sensor")
 

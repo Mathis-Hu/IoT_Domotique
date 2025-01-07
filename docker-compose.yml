@@ -28,6 +28,13 @@ services:
       - mosquitto
     restart: unless-stopped
 
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
   temperature-sensor:
     build: ./temperature-sensor
     environment:
