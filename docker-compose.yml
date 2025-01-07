@@ -28,22 +28,12 @@ services:
       - mosquitto
     restart: unless-stopped
 
-  temperature-sensor1:
+  temperature-sensor:
     build: ./temperature-sensor
-    container_name: temperture-sensor1
     environment:
       - TOPIC=sensors/temperature
-      - SENSOR_ID=01944130-11a4-73fe-8fb2-913b89fad8ff
     depends_on:
       - mosquitto
     restart: unless-stopped
-
-  temperature-sensor2:
-    build: ./temperature-sensor
-    container_name: temperture-sensor2
-    environment:
-      - TOPIC=sensors/temperature
-      - SENSOR_ID=01944130-fb36-7fe5-a904-a3478b2f8deb
-    depends_on:
-      - mosquitto
-    restart: unless-stopped
+    deploy:
+      replicas: 2

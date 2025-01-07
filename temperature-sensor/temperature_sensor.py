@@ -1,14 +1,15 @@
-import paho.mqtt.client as mqtt
-import random
-import time
 import json
 import os
+import random
+import time
+
+import paho.mqtt.client as mqtt
 
 # Configuration MQTT
-BROKER = "mosquitto"  # Adresse du broker Mosquitto (utiliser 'mosquitto' si exécuté dans Docker Compose)
-PORT = 1883           # Port par défaut de Mosquitto
+BROKER = os.getenv("BROKER", "mosquitto")
+PORT = os.getenv("PORT", "1883")
 TOPIC = os.getenv("TOPIC", "sensors/temperature")
-SENSOR_ID = os.getenv("SENSOR_ID", "temp_sensor_1")
+SENSOR_ID = os.getenv("HOSTNAME", "temp_sensor")
 
 # Génération de la température simulée
 def generate_temperature():
