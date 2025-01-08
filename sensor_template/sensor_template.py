@@ -65,7 +65,7 @@ def get_network_base():
 
 # Scanner les adresses IP d'un réseau donné
 def scan_network(base_ip, port=PORT):
-    print(f"Scan du réseau {base_ip}.0/24 sur le port {port}...")
+    print(f"[INFO] Scan du réseau {base_ip}.0/24 sur le port {port}...")
 
     # Créer une liste d'adresses IP à scanner (de 2 à 254)
     ips = [f"{base_ip}.{i}" for i in range(2, 255)]
@@ -80,7 +80,7 @@ def scan_network(base_ip, port=PORT):
 def test_mosquitto_server(ip, port=PORT):
     try:
         with socket.create_connection((ip, port), timeout=1):
-            print(f"Serveur Mosquitto trouvé à : {ip}:{port}")
+            print(f"[INFO] Serveur Mosquitto trouvé à : {ip}:{port}")
             return ip
     except:
         return None
@@ -88,7 +88,7 @@ def test_mosquitto_server(ip, port=PORT):
 # Fonction appelée lorsque le capteur se connecte au broker
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
-        print(f"[INFO] {SENSOR_ID} connecté au broker.")
+        print(f"[INFO] Message de connexion envoyé (code {rc}).")
         # Publier un message pour signaler la connexion
         client.publish(TOPIC_PING, json.dumps({
             "sensor_id": SENSOR_ID,
@@ -101,7 +101,7 @@ def on_connect(client, userdata, flags, rc):
 # Fonction appelée lorsque le capteur se déconnecte du broker
 def on_disconnect(client, userdata, rc):
     if rc != 0:
-        print(f"[ALERTE] Déconnexion inattendue de {SENSOR_ID}.")
+        print("[ERREUR] Message de déconnexion inattendu envoyé (code : {rc}).")
         # Publier un message pour signaler une déconnexion inattendue
         client.publish(TOPIC_PING, json.dumps({
             "sensor_id": SENSOR_ID,
@@ -109,7 +109,7 @@ def on_disconnect(client, userdata, rc):
             "timestamp": int(time.time())
         }), qos=1)
     else:
-        print(f"[INFO] {SENSOR_ID} déconnecté proprement.")
+        print("[INFO] Message de déconnexion envoyé.")
         # Publier un message pour signaler une déconnexion propre
         client.publish(TOPIC_PING, json.dumps({
             "sensor_id": SENSOR_ID,
@@ -125,12 +125,12 @@ def main():
             # Récupérer la base du réseau
             base_ip, prefix = get_network_base()
             base_ip = ".".join(base_ip.split(".")[:-1])
-            print(f"Réseau détecté : {base_ip}/{prefix}")
+            print(f"[INFO] Réseau détecté : {base_ip}/{prefix}")
 
             # Scan du réseau
             servers = scan_network(base_ip)
             if servers:
-                print("Serveurs Mosquitto détectés :", servers)
+                print("[INFO] Serveurs Mosquitto détectés :", servers)
 
                 # Connexion au broker MQTT
                 client = mqtt.Client()
@@ -141,16 +141,19 @@ def main():
                                keyfile="/app/certs/client.key",
                                tls_version=ssl.PROTOCOL_TLSv1_2)
 
+                # Configuration des fonctions de connexion et déconnexion
                 client.on_connect = on_connect
                 client.will_set(TOPIC_PING, json.dumps({
                     "sensor_id": SENSOR_ID,
                     "status": "disconnected_unexpectedly",
                     "timestamp": int(time.time())
                 }), qos=1, retain=True)
+
+                # Connexion au premier serveur trouvé
                 client.connect(servers[0], PORT, 60)
                 client.loop_start()
 
-                print("Capteur démarré")
+                print("[INFO] Capteur démarré")
 
                 try:
                     while True:
@@ -168,7 +171,7 @@ def main():
 
                         # Publier le message sur le topic
                         client.publish(TOPIC, json.dumps(message))
-                        print(f"Donnée envoyée : {message}")
+                        print(f"[INFO] Donnée envoyée : {message}")
 
                         if TYPE == "periodic":
                             # Attendre X secondes avant le prochain envoi
@@ -177,12 +180,12 @@ def main():
                             # Attendre X secondes avant le prochain envoi
                             time.sleep(round(random.uniform(DELAY_EVENT_MIN, DELAY_EVENT_MAX), 2))
                 except KeyboardInterrupt:
-                    print("\nArrêt du capteur.")
+                    print("\n[INFO] Arrêt du capteur.")
                 finally:
                     on_disconnect(None, None, 0)
                     client.disconnect()
             else:
-                print("Aucun serveur Mosquitto trouvé.")
+                print("[ERREUR] Aucun serveur Mosquitto trouvé.")
         except RuntimeError as e:
             print(f"[ERREUR] {e}")
     else:
