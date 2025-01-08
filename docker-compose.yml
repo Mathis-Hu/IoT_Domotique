@@ -14,15 +14,17 @@ services:
     image: eclipse-mosquitto:latest
     container_name: mosquitto
     ports:
-      - "1883:1883"
+      - "8883:8883"
       - "9001:9001"
     volumes:
       - ./mosquitto:/mosquitto/config
+      - ./mosquitto/certs:/etc/mosquitto/certs
       - C:/Users/zaoua/Documents/IoT/volumes/mosquitto-data:/mosquitto/data
       - C:/Users/zaoua/Documents/IoT/volumes/mosquitto-logs:/mosquitto/log
     restart: unless-stopped
     networks:
-      - iot_network
+      iot_network:
+        ipv4_address: 192.168.2.10
 
   bridge:
     build: ./bridge
@@ -31,6 +33,8 @@ services:
       - mongo
       - mosquitto
     restart: unless-stopped
+    volumes:
+      - ./bridge/certs:/app/certs
     networks:
       - iot_network
 
@@ -45,10 +49,10 @@ services:
 
   temperature-sensor:
     build: ./temperature-sensor
-    environment:
-      - TOPIC=sensors/temperature
     depends_on:
       - mosquitto
+    volumes:
+      - ./temperature-sensor/certs:/app/certs
     restart: unless-stopped
     networks:
       - iot_network

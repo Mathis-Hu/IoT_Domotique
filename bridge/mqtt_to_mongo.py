@@ -1,4 +1,5 @@
 import json
+import ssl
 
 import paho.mqtt.client as mqtt
 from pymongo import MongoClient
@@ -26,6 +27,7 @@ def on_message(client, userdata, message):
 
         # Analyse de la payload pour vérifier le "sensor_id"
         try:
+            topic = json.loads(payload).get("topic")
             payload_json = json.loads(payload)
             sensor_id = payload_json.get("sensor_id")
 
@@ -36,7 +38,7 @@ def on_message(client, userdata, message):
                     if not unknown_devices_collection.find_one({"sensor_id": sensor_id}):
                         data = {
                             "sensor_id": sensor_id,
-                            "name": "",
+                            "name": "Nouveau capteur (" + topic + ")",
                             "room": ""
                         }
                         unknown_devices_collection.insert_one(data)
@@ -55,11 +57,19 @@ def init(client, userdata, flags, rc):
 
 # Configuration du client MQTT
 client = mqtt.Client()
+
+# Activer SSL/TLS
+client.tls_set(ca_certs="/app/certs/ca.crt",
+               certfile="/app/certs/client.crt",
+               keyfile="/app/certs/client.key",
+               tls_version=ssl.PROTOCOL_TLSv1_2)
+
+# Configuration des callbacks
 client.on_connect = init
 client.on_message = on_message
 
 # Connexion à Mosquitto
-client.connect("mosquitto", 1883, 60)
+client.connect("192.168.2.10", 8883, 60)
 
 # Souscrire à tous les topics
 client.subscribe("#")

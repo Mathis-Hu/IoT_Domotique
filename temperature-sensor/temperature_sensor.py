@@ -2,6 +2,7 @@ import json
 import os
 import random
 import socket
+import ssl
 import time
 from concurrent.futures import ThreadPoolExecutor
 from ipaddress import ip_network
@@ -10,7 +11,7 @@ import netifaces as ni
 import paho.mqtt.client as mqtt
 
 # Configuration MQTT
-PORT = os.getenv("PORT", 1883)
+PORT = os.getenv("PORT", 8883)
 TOPIC = os.getenv("TOPIC", "sensors/temperature")
 SENSOR_ID = os.getenv("HOSTNAME", "temp_sensor")
 
@@ -84,6 +85,13 @@ def main():
 
             # Connexion au broker MQTT
             client = mqtt.Client()
+
+            # Activer SSL/TLS
+            client.tls_set(ca_certs="/app/certs/ca.crt",
+                           certfile="/app/certs/client.crt",
+                           keyfile="/app/certs/client.key",
+                           tls_version=ssl.PROTOCOL_TLSv1_2)
+
             client.connect(servers[0], PORT, 60)
 
             print("Capteur de température démarré...")
