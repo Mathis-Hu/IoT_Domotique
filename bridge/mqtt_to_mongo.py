@@ -27,7 +27,6 @@ def on_message(client, userdata, message):
 
         # Analyse de la payload pour vérifier le "sensor_id"
         try:
-            topic = json.loads(payload).get("topic")
             payload_json = json.loads(payload)
             sensor_id = payload_json.get("sensor_id")
 
@@ -38,7 +37,7 @@ def on_message(client, userdata, message):
                     if not unknown_devices_collection.find_one({"sensor_id": sensor_id}):
                         data = {
                             "sensor_id": sensor_id,
-                            "name": "Nouveau capteur (" + topic + ")",
+                            "name": f"Nouveau capteur ({message.topic})",
                             "room": ""
                         }
                         unknown_devices_collection.insert_one(data)

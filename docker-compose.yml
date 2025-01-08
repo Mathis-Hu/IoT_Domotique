@@ -43,6 +43,7 @@ services:
     container_name: api
     depends_on:
       - mongo
+      - mosquitto
     ports:
       - "3000:3000"
     restart: unless-stopped
@@ -54,6 +55,8 @@ services:
     container_name: frontend
     ports:
       - "80:80"
+    depends_on:
+      - api
     networks:
       - iot_network
     restart: unless-stopped
@@ -61,7 +64,7 @@ services:
   temperature-sensor:
     build: ./temperature-sensor
     depends_on:
-      - mosquitto
+      - bridge
     volumes:
       - ./temperature-sensor/certs:/app/certs
     restart: unless-stopped
