@@ -7,5 +7,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD ["python", "-u", "temperature_sensor.py"]
+CMD ["python", "-u", "interior_temperature_sensor.py"]
 
