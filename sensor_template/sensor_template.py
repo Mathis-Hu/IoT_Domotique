@@ -34,6 +34,7 @@ def generate_value():
 # Configuration MQTT
 PORT = os.getenv("PORT", 8883)
 SENSOR_ID = os.getenv("HOSTNAME", "temp_sensor")
+TOPIC_PING = "ping"
 
 
 # Permet de récupérer le réseau local
@@ -59,7 +60,7 @@ def get_network_base():
             # L'interface ne supporte pas IPv4 ou n'a pas d'adresse
             continue
 
-    raise RuntimeError("Impossible de déterminer le réseau local.")
+    raise RuntimeError("[ERREUR] Impossible de déterminer le réseau local.")
 
 
 # Scanner les adresses IP d'un réseau donné
@@ -83,6 +84,38 @@ def test_mosquitto_server(ip, port=PORT):
             return ip
     except:
         return None
+
+# Fonction appelée lorsque le capteur se connecte au broker
+def on_connect(client, userdata, flags, rc):
+    if rc == 0:
+        print(f"[INFO] {SENSOR_ID} connecté au broker.")
+        # Publier un message pour signaler la connexion
+        client.publish(TOPIC_PING, json.dumps({
+            "sensor_id": SENSOR_ID,
+            "status": "connected",
+            "timestamp": int(time.time())
+        }), qos=1)
+    else:
+        print(f"[ERREUR] Connexion échouée avec code {rc}.")
+
+# Fonction appelée lorsque le capteur se déconnecte du broker
+def on_disconnect(client, userdata, rc):
+    if rc != 0:
+        print(f"[ALERTE] Déconnexion inattendue de {SENSOR_ID}.")
+        # Publier un message pour signaler une déconnexion inattendue
+        client.publish(TOPIC_PING, json.dumps({
+            "sensor_id": SENSOR_ID,
+            "status": "disconnected_unexpectedly",
+            "timestamp": int(time.time())
+        }), qos=1)
+    else:
+        print(f"[INFO] {SENSOR_ID} déconnecté proprement.")
+        # Publier un message pour signaler une déconnexion propre
+        client.publish(TOPIC_PING, json.dumps({
+            "sensor_id": SENSOR_ID,
+            "status": "disconnected",
+            "timestamp": int(time.time())
+        }), qos=1)
 
 
 # Fonction principale
@@ -108,7 +141,14 @@ def main():
                                keyfile="/app/certs/client.key",
                                tls_version=ssl.PROTOCOL_TLSv1_2)
 
+                client.on_connect = on_connect
+                client.will_set(TOPIC_PING, json.dumps({
+                    "sensor_id": SENSOR_ID,
+                    "status": "disconnected_unexpectedly",
+                    "timestamp": int(time.time())
+                }), qos=1, retain=True)
                 client.connect(servers[0], PORT, 60)
+                client.loop_start()
 
                 print("Capteur démarré")
 
@@ -139,13 +179,14 @@ def main():
                 except KeyboardInterrupt:
                     print("\nArrêt du capteur.")
                 finally:
+                    on_disconnect(None, None, 0)
                     client.disconnect()
             else:
                 print("Aucun serveur Mosquitto trouvé.")
         except RuntimeError as e:
-            print(f"Erreur : {e}")
+            print(f"[ERREUR] {e}")
     else:
-        print("Erreur : type invalide, indiquez 'periodic' ou 'event'. Déconnexion.")
+        print("[ERREUR] Type invalide, indiquez 'periodic' ou 'event'. Déconnexion.")
 
 
 if __name__ == "__main__":
