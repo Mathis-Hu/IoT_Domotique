@@ -7,6 +7,8 @@ services:
     volumes:
       - C:/Users/zaoua/Documents/IoT/volumes/mongo-data:/data/db
     restart: unless-stopped
+    networks:
+      - iot_network
 
   mosquitto:
     image: eclipse-mosquitto:latest
@@ -19,6 +21,8 @@ services:
       - C:/Users/zaoua/Documents/IoT/volumes/mosquitto-data:/mosquitto/data
       - C:/Users/zaoua/Documents/IoT/volumes/mosquitto-logs:/mosquitto/log
     restart: unless-stopped
+    networks:
+      - iot_network
 
   bridge:
     build: ./bridge
@@ -27,12 +31,16 @@ services:
       - mongo
       - mosquitto
     restart: unless-stopped
+    networks:
+      - iot_network
 
   frontend:
     build: ./frontend
     container_name: frontend
     ports:
-      - "3000:3000"
+      - "80:80"
+    networks:
+      - iot_network
     restart: unless-stopped
 
   temperature-sensor:
@@ -42,5 +50,14 @@ services:
     depends_on:
       - mosquitto
     restart: unless-stopped
+    networks:
+      - iot_network
     deploy:
-      replicas: 2
+      replicas: 1
+
+networks:
+  iot_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.2.0/24

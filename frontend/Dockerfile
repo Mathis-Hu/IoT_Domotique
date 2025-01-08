@@ -1,15 +1,13 @@
-FROM node:20-alpine
+FROM nginx:alpine
 
-WORKDIR /app
+# Copier les fichiers construits vers le répertoire utilisé par Nginx
+COPY ./dist /usr/share/nginx/html
 
-COPY package.json .
+# Copier le fichier de configuration Nginx personnalisé (si nécessaire)
+# COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-RUN npm install
-RUN npm i -g serve
+# Exposer le port 80
+EXPOSE 80
 
-COPY . .
-
-RUN npm run build
-EXPOSE 3000
-
-CMD [ "serve", "-s", "dist" ]
+# Lancer Nginx
+CMD ["nginx", "-g", "daemon off;"]
