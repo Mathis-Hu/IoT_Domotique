@@ -62,7 +62,7 @@ services:
     restart: unless-stopped
 
   temperature-sensor:
-    build: ./temperature-sensor
+    build: ./sensor_template
     depends_on:
       - bridge
     volumes:

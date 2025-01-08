@@ -32,9 +32,11 @@ def generate_value():
 # --- NE PAS MODIFIER A PARTIR D'ICI ---
 
 # Configuration MQTT
+IP_ADDRESS = ""
 PORT = os.getenv("PORT", 8883)
 SENSOR_ID = os.getenv("HOSTNAME", "temp_sensor")
 TOPIC_PING = "ping"
+CACHE_FILE = "cache.json"
 
 
 # Permet de récupérer le réseau local
@@ -120,18 +122,41 @@ def on_disconnect(client, userdata, rc):
 
 # Fonction principale
 def main():
+    global IP_ADDRESS
     if TYPE == "periodic" or TYPE == "event":
         try:
-            # Récupérer la base du réseau
-            base_ip, prefix = get_network_base()
-            base_ip = ".".join(base_ip.split(".")[:-1])
-            print(f"[INFO] Réseau détecté : {base_ip}/{prefix}")
 
-            # Scan du réseau
-            servers = scan_network(base_ip)
-            if servers:
-                print("[INFO] Serveurs Mosquitto détectés :", servers)
+            # Vérifier si le cache existe
+            if os.path.exists(CACHE_FILE):
+                # Réutiliser l'adresse IP précédente
+                with open(CACHE_FILE, "r") as f:
+                    content = json.load(f)
+                    print(f"[INFO] Cache chargé : {content}")
+                    if content["ip_address"]:
+                        IP_ADDRESS = content["ip_address"]
+                        print(f"[INFO] Adresse IP chargée : {IP_ADDRESS}")
+            else:
+                print(f"[INFO] Aucun cache trouvé.")
 
+                # Récupérer la base du réseau
+                base_ip, prefix = get_network_base()
+                base_ip = ".".join(base_ip.split(".")[:-1])
+                print(f"[INFO] Réseau détecté : {base_ip}/{prefix}")
+
+                # Scan du réseau
+                servers = scan_network(base_ip)
+                if servers:
+                    print("[INFO] Serveurs Mosquitto détectés :", servers)
+                    IP_ADDRESS = servers[0]
+                    # Sauvegarder l'adresse IP dans le cache
+                    with open(CACHE_FILE, "w") as f:
+                        json.dump({"ip_address": IP_ADDRESS}, f)
+                        print(f"[INFO] Adresse IP sauvegardée : {IP_ADDRESS}")
+                else:
+                    print("[ERREUR] Aucun serveur Mosquitto trouvé.")
+                    return
+
+            if IP_ADDRESS != "":
                 # Connexion au broker MQTT
                 client = mqtt.Client()
 
@@ -150,7 +175,7 @@ def main():
                 }), qos=1, retain=True)
 
                 # Connexion au premier serveur trouvé
-                client.connect(servers[0], PORT, 60)
+                client.connect(IP_ADDRESS, PORT, 60)
                 client.loop_start()
 
                 print("[INFO] Capteur démarré")
