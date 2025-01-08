@@ -15,7 +15,7 @@ app.use(cors({
     origin: 'http://localhost:5173', // Autorise seulement cette origine
     methods: ['GET', 'POST', 'PUT', 'DELETE'], // Autorise ces méthodes HTTP
     allowedHeaders: ['Content-Type', 'Authorization'] // Autorise ces en-têtes
-  }));
+}));
 
 // Middleware pour parser le JSON
 app.use(bodyParser.json());
@@ -34,21 +34,21 @@ mqttClient.on("connect", () => {
 });
 
 // Gestion des WebSockets
-const wss = new WebSocket.Server({ noServer: true });
+const wss = new WebSocket.Server({noServer: true});
 let wsClients = [];
 
 // Envoie des messages MQTT aux clients WebSocket connectés
 mqttClient.on("message", (topic, message) => {
     console.log(`MQTT -> Topic: ${topic}, Message: ${message.toString()}`);
     wsClients.forEach((ws) => {
-        ws.send(JSON.stringify({ topic, message: message.toString() }));
+        ws.send(JSON.stringify({topic, message: message.toString()}));
     });
 });
 
 // Endpoint REST pour récupérer l'historique des messages
 let messageHistory = []; // Stocke un historique local des messages
 mqttClient.on("message", (topic, message) => {
-    messageHistory.push({ topic, message: message.toString() });
+    messageHistory.push({topic, message: message.toString()});
 });
 
 // Configuration des WebSockets
@@ -74,6 +74,6 @@ server.on("upgrade", (request, socket, head) => {
 });
 
 // Connexion à MongoDB
-mongoose.connect('mongodb://127.0.0.1:27017/mqtt', { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect('mongodb://mongo:27017/mqtt', {useNewUrlParser: true, useUnifiedTopology: true})
     .then(() => console.log('MongoDB connected'))
     .catch(err => console.error('MongoDB connection error:', err));

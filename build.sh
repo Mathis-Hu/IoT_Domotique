@@ -1,9 +1,9 @@
 #!/bin/bash
-echo "Récupération des dépendances"
+echo "Récupération des dépendances (frontend)"
 cd frontend/ || exit
 npm install
 
-echo "Lancement de la compilation"
+echo "Lancement de la compilation (frontend)"
 npm run build
 
 echo "Démarrage des conteneurs (docker-compose)"

@@ -38,6 +38,17 @@ services:
     networks:
       - iot_network
 
+  api:
+    build: ./api
+    container_name: api
+    depends_on:
+      - mongo
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    networks:
+      - iot_network
+
   frontend:
     build: ./frontend
     container_name: frontend
