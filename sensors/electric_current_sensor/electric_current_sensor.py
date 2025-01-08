@@ -11,32 +11,53 @@ import netifaces as ni
 import paho.mqtt.client as mqtt
 
 # --- Variables globales a modifier pour créer un nouveau capteur ---
-TOPIC = os.getenv("TOPIC", "temperature")  # Topic à modifier par capteur
+TOPIC = os.getenv("TOPIC", "electric-current")  # Topic à modifier par capteur
 TYPE = "periodic"  # type du capteur, "periodic" or "event"
-UNIT = "°C"  # Unité du capteur
-DELAY_PERIODIC = 5 * 60  # délai en secondes, si capteur de type périodique, par défaut 5 minutes
+UNIT = "W"  # Unité du capteur
+DELAY_PERIODIC = 1  # délai en secondes, si capteur de type périodique, par défaut 5 minutes
 DELAY_EVENT_MIN = 3 * 60  # délai minimum en secondes, si capteur de type événement, par défaut 3 minutes
 DELAY_EVENT_MAX = 15 * 60  # délai maximum en secondes, si capteur de type événement, par défaut 15 minutes
 previous_value = None  # valeur précédente, surtout utile pour les capteurs de type événement
 
+delay_peak = 0 # valeur représentant combien de temps le pic d'utilisation va durer
+
+
 # Génération de la valeur simulée
 def generate_value():
-    global previous_value
+    global previous_value, delay_peak
 
     value = None
 
+    limit_low = 400
+    limit_high = 5000
+    variation_low = 200
+    variation_step = 100
+
     if previous_value is None:
-        # Première valeur aléatoire dans la plage 17.5 à 20.5
-        value = random.uniform(17.5, 20.5)
+        # Première valeur aléatoire dans la plage de valeurs
+        value = limit_low + random.uniform(-variation_low, variation_low)
     else:
-        # Variation réaliste de +/- 0.5°C
-        variation = random.uniform(-0.5, 0.5)
+        # Variation réaliste des valeurs
+        variation = random.uniform(-variation_step, variation_step)
         value = previous_value + variation
 
-        # Assurer que la température reste dans la plage 17.5 à 20.5
-        value = max(17.5, min(20.5, value))
+        if delay_peak <= 0:
+            state = random.randint(0, 4)
+            if 0 <= state <= 1: # Représente un petit pic d'utilisation électrique
+                value += random.uniform(1000, 2000)
+                delay_peak = random.randint(1, 4)
+            elif state == 2: # Représente un grand pic d'utilisation électrique
+                value += random.uniform(3000, 4000)
+                delay_peak = random.randint(1, 4)
+            else: # Représente une utilisation faible d'électricité
+                value = limit_low + random.uniform(-variation_low, variation_low)
+        else:
+            delay_peak -= 1
+
+        # Assure que la valeur reste dans la plage de valeurs
+        value = max(limit_low, min(limit_high, value))
     
-    value = round(value, 2)
+    value = round(value, 0)
     previous_value = value
     return value
 

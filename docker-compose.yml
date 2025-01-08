@@ -61,12 +61,48 @@ services:
       - iot_network
     restart: unless-stopped
 
-  temperature-sensor:
-    build: ./sensor_template
+  interior_temperature_sensor:
+    build: ./sensors/interior_temperature_sensor
     depends_on:
       - bridge
     volumes:
-      - ./temperature-sensor/certs:/app/certs
+      - ./sensors/interior_temperature_sensor/certs:/app/certs
+    restart: unless-stopped
+    networks:
+      - iot_network
+    deploy:
+      replicas: 1
+
+  exterior_temperature_sensor:
+    build: ./sensors/exterior_temperature_sensor
+    depends_on:
+      - bridge
+    volumes:
+      - ./sensors/exterior_temperature_sensor/certs:/app/certs
+    restart: unless-stopped
+    networks:
+      - iot_network
+    deploy:
+      replicas: 1
+
+  humidity_sensor:
+    build: ./sensors/humidity_sensor
+    depends_on:
+      - bridge
+    volumes:
+      - ./sensors/humidity_sensor/certs:/app/certs
+    restart: unless-stopped
+    networks:
+      - iot_network
+    deploy:
+      replicas: 1
+
+  electric_current_sensor:
+    build: ./sensors/electric_current_sensor
+    depends_on:
+      - bridge
+    volumes:
+      - ./sensors/electric_current_sensor/certs:/app/certs
     restart: unless-stopped
     networks:
       - iot_network

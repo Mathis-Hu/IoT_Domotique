@@ -1,7 +1,6 @@
 import json
 import os
 import random
-import math
 import socket
 import ssl
 import time
@@ -12,98 +11,37 @@ import netifaces as ni
 import paho.mqtt.client as mqtt
 
 # --- Variables globales a modifier pour créer un nouveau capteur ---
-TOPIC = os.getenv("TOPIC", "temperature")  # Topic à modifier par capteur
+TOPIC = os.getenv("TOPIC", "humidity")  # Topic à modifier par capteur
 TYPE = "periodic"  # type du capteur, "periodic" or "event"
-UNIT = "°C"  # Unité du capteur
-DELAY_PERIODIC = 5 * 60  # délai en secondes, si capteur de type périodique, par défaut 5 minutes
+UNIT = "% HR"  # Unité du capteur
+DELAY_PERIODIC = 1  # délai en secondes, si capteur de type périodique, par défaut 5 minutes
 DELAY_EVENT_MIN = 3 * 60  # délai minimum en secondes, si capteur de type événement, par défaut 3 minutes
 DELAY_EVENT_MAX = 15 * 60  # délai maximum en secondes, si capteur de type événement, par défaut 15 minutes
 previous_value = None  # valeur précédente, surtout utile pour les capteurs de type événement
 
-# Variables pour la température extérieure
-min_temperature = None
-max_temperature = None
-current_temperature = None
-direction = 1  # 1 pour ascendant, -1 pour descendant
-
-# Initialisation des températures min et max
-def initialize_temperature_range():
-    global min_temperature, max_temperature, current_temperature
-
-    # Température minimale aléatoire entre -2°C et 10°C
-    min_temperature = round(random.uniform(-2, 10), 2)
-
-    # Température maximale calculée
-    max_temperature = round(min_temperature + random.uniform(15, 25), 2)
-
-    # Température actuelle choisie aléatoirement entre min et max
-    current_temperature = round(random.uniform(min_temperature, max_temperature), 2)
-
-    # print(f"[INFO] Initialisation. Température minimale : {min_temperature}°C, maximale : {max_temperature}°C")
-
-# Mise à jour de la plage de température maximum
-def change_max_temp():
-    global min_temperature, max_temperature
-
-    # Nouveau maximum calculé via l'ancien minimum
-    max_temperature = round(min_temperature + random.uniform(15, 25), 2)
-
-    # print(f"[INFO] Nouvelle température maximale : {max_temperature}°C")
-
-# Mise à jour de la plage de température minimum
-def change_min_temp():
-    global min_temperature, max_temperature
-
-    # Nouveau minimum entre -2°C et +2°C autour de l'ancien minimum, contraint entre -2°C et 10°C
-    new_min = round(min_temperature + random.uniform(-2, 2), 2)
-    min_temperature = max(-2, min(10, new_min))
-
-    # print(f"[INFO] Nouvelle température minimale : {min_temperature}°C")
-
-# Fonction pour ajuster le pas de température avec une variation quadratique
-def calculate_step():
-    global current_temperature, min_temperature, max_temperature
-    # Normalisation de la température actuelle entre 0 et 1
-    normalized_temp = (current_temperature - min_temperature) / (max_temperature - min_temperature)
-    
-    # Calcul de l'oscillation sinusoïdale
-    oscillation_factor = math.sin(math.pi * normalized_temp)
-    
-    # Le step est proportionnel à l'oscillation (les extrêmes ont une variation plus lente)
-    step = oscillation_factor * (max_temperature - min_temperature) / 15  # Divisé par 15 pour une petite variation
-    
-    # Appliquer la limite minimale de 0.001 et arrondir à 3 chiffres après la virgule
-    step = max(step, 0.001)
-    step = round(step, 3)
-    
-    return step
-
-# Mise à jour de la température selon la direction (ascendant ou descendant)
+# Génération de la valeur simulée
 def generate_value():
-    global current_temperature, direction, min_temperature, max_temperature
+    global previous_value
 
-    # Initialise les valeurs de température lors du lancement uniquement
-    if min_temperature == None or max_temperature == None or current_temperature == None:
-        initialize_temperature_range()
+    value = None
 
-    # Calculer le pas de température basé sur la variation quadratique
-    step = calculate_step()
+    limit_low = 35
+    limit_high = 65
+    variation_step = 4
 
-    # Mise à jour de la température en fonction de la direction
-    if direction == 1:  # Phase ascendante
-        current_temperature += random.uniform(0.1, step)  # Augmenter la température progressivement
-        if current_temperature >= max_temperature:  # Si on atteint le maximum
-            current_temperature = max_temperature
-            direction = -1  # Changer de direction pour la phase descendante
-            change_min_temp()
-    elif direction == -1:  # Phase descendante
-        current_temperature -= random.uniform(0.1, step)  # Diminuer la température progressivement
-        if current_temperature <= min_temperature:  # Si on atteint le minimum
-            current_temperature = min_temperature
-            direction = 1  # Changer de direction pour la phase ascendante
-            change_max_temp()
+    if previous_value is None:
+        # Première valeur aléatoire dans la plage de valeurs
+        value = random.uniform(limit_low, limit_high)
+    else:
+        # Variation réaliste des valeurs
+        variation = random.uniform(-variation_step, variation_step)
+        value = previous_value + variation
 
-    value = round(current_temperature, 2)
+        # Assure que la valeur reste dans la plage de valeurs
+        value = max(limit_low, min(limit_high, value))
+    
+    value = round(value, 2)
+    previous_value = value
     return value
 
     
