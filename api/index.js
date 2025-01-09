@@ -4,6 +4,7 @@ import {readFileSync} from 'fs';
 import {dirname, resolve} from 'path';
 import {fileURLToPath} from 'url';
 import {WebSocket} from 'ws';
+import {MongoClient} from 'mongodb';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -11,6 +12,13 @@ const __dirname = dirname(__filename);
 const app = express();
 const port = 3000;
 const wsPort = 3001;
+
+// Configuration MongoDB
+const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017';
+const dbName = process.env.DB_NAME || 'mqtt';
+
+// Middleware pour parser le JSON
+app.use(express.json());
 
 // Chemins des certificats SSL
 const caFile = resolve(__dirname, 'certs/ca.crt');
@@ -81,4 +89,113 @@ wss.on('connection', (ws) => {
         const index = webSocketClients.indexOf(ws);
         if (index !== -1) webSocketClients.splice(index, 1);
     });
+});
+
+// Initialisation de la connexion MongoDB
+let db;
+MongoClient.connect(mongoUri, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(client => {
+        console.log('[INFO] Connecté à MongoDB');
+        db = client.db(dbName);
+    })
+    .catch(err => {
+        console.error('[ERREUR] Connexion à MongoDB échouée :', err);
+        process.exit(1);
+    });
+
+
+// Routes
+
+// Récupérer la liste des capteurs connus
+app.get('/api/sensors/known', async (req, res) => {
+    try {
+        const sensors = await db.collection('known_devices').find().toArray();
+        res.json(sensors);
+    } catch (err) {
+        res.status(500).json({ error: 'Erreur lors de la récupération des capteurs connus' });
+    }
+});
+
+// Récupérer la liste des capteurs inconnus
+app.get('/api/sensors/unknown', async (req, res) => {
+    try {
+        const sensors = await db.collection('unknown_devices').find().toArray();
+        res.json(sensors);
+        console.log(sensors);
+    } catch (err) {
+        res.status(500).json({ error: 'Erreur lors de la récupération des capteurs inconnus' });
+    }
+});
+
+// Récupérer la liste de tous les capteurs
+app.get('/api/sensors/all', async (req, res) => {
+    try {
+        const knownSensors = await db.collection('known_devices').find().toArray();
+        const unknownSensors = await db.collection('unknown_devices').find().toArray();
+        res.json([...knownSensors, ...unknownSensors]);
+    } catch (err) {
+        res.status(500).json({ error: 'Erreur lors de la récupération de tous les capteurs' });
+    }
+});
+
+// Récupérer le dernier message d'un capteur spécifique
+app.get('/api/sensors/:sensorId/latest', async (req, res) => {
+    const { sensorId } = req.params;
+    try {
+        const message = await db.collection('messages')
+            .find({ sensor_id: sensorId })
+            .sort({ timestamp: -1 })
+            .limit(1)
+            .toArray();
+        if (message.length) {
+            res.json(message[0]);
+        } else {
+            res.status(404).json({ error: `Aucun message trouvé pour le capteur ${sensorId}` });
+        }
+    } catch (err) {
+        res.status(500).json({ error: 'Erreur lors de la récupération du dernier message du capteur' });
+    }
+});
+
+// Récupérer le dernier message de tous les capteurs connus
+app.get('/api/sensors/known/latest', async (req, res) => {
+    try {
+        const knownSensors = await db.collection('known_sensors').find().toArray();
+        const messages = await Promise.all(
+            knownSensors.map(async sensor => {
+                const message = await db.collection('messages')
+                    .find({ sensor_id: sensor.sensor_id })
+                    .sort({ timestamp: -1 })
+                    .limit(1)
+                    .toArray();
+                return message[0] || null;
+            })
+        );
+        res.json(messages.filter(msg => msg !== null));
+    } catch (err) {
+        res.status(500).json({ error: 'Erreur lors de la récupération des derniers messages des capteurs connus' });
+    }
+});
+
+// Définir ou modifier les informations d'un capteur
+app.put('/api/sensors/:sensorId', async (req, res) => {
+    const { sensorId } = req.params;
+    const updateData = req.body;
+    const collection = updateData.status === 'known' ? 'known_sensors' : 'unknown_sensors';
+
+    try {
+        const result = await db.collection(collection).updateOne(
+            { sensor_id: sensorId },
+            { $set: updateData },
+            { upsert: true }
+        );
+
+        if (result.matchedCount > 0) {
+            res.json({ message: `Capteur ${sensorId} mis à jour`, updateData });
+        } else {
+            res.json({ message: `Capteur ${sensorId} créé`, updateData });
+        }
+    } catch (err) {
+        res.status(500).json({ error: 'Erreur lors de la mise à jour des informations du capteur' });
+    }
 });
