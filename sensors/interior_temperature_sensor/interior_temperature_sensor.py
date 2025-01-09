@@ -113,6 +113,7 @@ def on_connect(client, userdata, flags, rc):
         client.publish(TOPIC_PING, json.dumps({
             "sensor_id": SENSOR_ID,
             "status": "connected",
+            "original_topic": TOPIC,
             "timestamp": int(time.time())
         }), qos=1)
     else:
@@ -126,6 +127,7 @@ def on_disconnect(client, userdata, rc):
         client.publish(TOPIC_PING, json.dumps({
             "sensor_id": SENSOR_ID,
             "status": "disconnected_unexpectedly",
+            "original_topic": TOPIC,
             "timestamp": int(time.time())
         }), qos=1)
     else:
@@ -134,6 +136,7 @@ def on_disconnect(client, userdata, rc):
         client.publish(TOPIC_PING, json.dumps({
             "sensor_id": SENSOR_ID,
             "status": "disconnected",
+            "original_topic": TOPIC,
             "timestamp": int(time.time())
         }), qos=1)
 
@@ -189,6 +192,7 @@ def main():
                 client.will_set(TOPIC_PING, json.dumps({
                     "sensor_id": SENSOR_ID,
                     "status": "disconnected_unexpectedly",
+                    "original_topic": TOPIC,
                     "timestamp": int(time.time())
                 }), qos=1, retain=True)
 

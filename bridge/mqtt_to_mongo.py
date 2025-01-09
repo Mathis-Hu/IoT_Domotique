@@ -32,11 +32,11 @@ def on_message(client, userdata, message):
 # Mise à jour de l'état du capteur
 def process_ping(message, payload):
     # Mise à jour de l'état du capteur
-    sensor_id = get_sensor_id(payload)
+    sensor_id = get_payload_property(payload, "sensor_id")
     print("[INFO] Ping reçu")
 
     if sensor_id:
-        status = get_sensor_status(payload)
+        status = get_payload_property(payload, "status")
         # Si existe dans "known_devices", mettre à jour le statut
         if known_devices_collection.find_one({"sensor_id": sensor_id}):
             known_devices_collection.update_one({"sensor_id": sensor_id}, {"$set": {"status": status}})
@@ -69,7 +69,7 @@ def process_message(message, payload):
 def process_sensor(message, payload):
     try:
         # Analyse de la payload pour vérifier le "sensor_id"
-        sensor_id = get_sensor_id(payload)
+        sensor_id = get_payload_property(payload, "sensor_id")
         if sensor_id:
             # Vérification dans "known_devices"
             if not known_devices_collection.find_one({"sensor_id": sensor_id}):
@@ -77,7 +77,7 @@ def process_sensor(message, payload):
                 if not unknown_devices_collection.find_one({"sensor_id": sensor_id}):
                     data = {
                         "sensor_id": sensor_id,
-                        "name": f"Nouveau capteur ({message.topic})",
+                        "name": f"Nouveau capteur ({get_payload_property(payload, 'original_topic')})" if message.topic == "ping" else f"Nouveau capteur ({message.topic})",
                         "room": "",
                         "status": "connected"
                     }
@@ -94,18 +94,10 @@ def on_connect(client, userdata, flags, rc):
     print("[INFO] Connecté au broker MQTT")
 
 
-def get_sensor_status(payload):
+def get_payload_property(payload, property_name):
     try:
         payload_json = json.loads(payload)
-        return payload_json.get("status")
-    except json.JSONDecodeError:
-        return
-
-
-def get_sensor_id(payload):
-    try:
-        payload_json = json.loads(payload)
-        return payload_json.get("sensor_id")
+        return payload_json.get(property_name)
     except json.JSONDecodeError:
         return
 
