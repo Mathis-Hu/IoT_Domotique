@@ -6,4 +6,5 @@ export interface Sensor {
     status: string;
     last_value: number;
     unit: string;
+    type: string;
 }

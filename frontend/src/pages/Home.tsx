@@ -25,7 +25,8 @@ const Home: React.FC = () => {
                                 return {
                                     ...sensor,
                                     last_value: value ? value.value : null,
-                                    unit: value ? value.unit : null
+                                    unit: value ? value.unit : null,
+                                    type: value ? value.type : null
                                 };
                             });
                             setSensors(sensors);
@@ -187,19 +188,26 @@ const Home: React.FC = () => {
 
             <main className="flex flex-wrap gap-8 justify-center mt-5">
                 {/* Contenu principal */}
-                {filteredSensors.map((sensor, index) => (
-                    <PeriodSensors
-                        key={index}
-                        _id={sensor._id}
-                        sensor_id={sensor.sensor_id}
-                        name={sensor.name}
-                        room={sensor.room}
-                        status={sensor.status}
-                        last_value={sensor.last_value}
-                        unit={sensor.unit}
-                    />
-                ))}
+                {filteredSensors.map((sensor, index) => {
+                    if (sensor.type === "periodic") {
+                        return (
+                            <PeriodSensors
+                                key={index}
+                                _id={sensor._id}
+                                sensor_id={sensor.sensor_id}
+                                name={sensor.name}
+                                room={sensor.room}
+                                status={sensor.status}
+                                last_value={sensor.last_value}
+                                unit={sensor.unit}
+                                type={sensor.type}
+                            />
+                        );
+                    }
+                    return null; // Ajout d'un retour par défaut pour éviter une erreur
+                })}
             </main>
+
         </div>
     );
 };

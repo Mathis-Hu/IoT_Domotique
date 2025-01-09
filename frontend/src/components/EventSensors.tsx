@@ -14,8 +14,6 @@ interface SensorProps {
   }
 
 const EventSensors: React.FC<SensorProps> = ({
-  _id = "Non défini",
-  sensor_id = "Non défini",
   name = "Sans nom",
   room = "Non attribuée",
   status = "indéterminé",
