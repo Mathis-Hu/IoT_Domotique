@@ -121,7 +121,6 @@ app.get('/api/sensors/unknown', async (req, res) => {
     try {
         const sensors = await db.collection('unknown_devices').find().toArray();
         res.json(sensors);
-        console.log(sensors);
     } catch (err) {
         res.status(500).json({ error: 'Erreur lors de la récupération des capteurs inconnus' });
     }
@@ -135,6 +134,29 @@ app.get('/api/sensors/all', async (req, res) => {
         res.json([...knownSensors, ...unknownSensors]);
     } catch (err) {
         res.status(500).json({ error: 'Erreur lors de la récupération de tous les capteurs' });
+    }
+});
+
+// Récupérer le dernier message de tous les capteurs connus
+app.get('/api/sensors/all/latest', async (req, res) => {
+    try {
+        const knownSensors = await db.collection('known_devices').find().toArray();
+        const unknownSensors = await db.collection('unknown_devices').find().toArray();
+        const allSensors = [...knownSensors, ...unknownSensors];
+
+        const messages = await Promise.all(
+            allSensors.map(async sensor => {
+                const message = await db.collection('messages')
+                    .find({sensor_id: sensor.sensor_id})
+                    .sort({timestamp: -1})
+                    .limit(1)
+                    .toArray();
+                return message[0] || null;
+            })
+        );
+        res.json(messages.filter(msg => msg !== null));
+    } catch (err) {
+        res.status(500).json({error: 'Erreur lors de la récupération des derniers messages des capteurs connus'});
     }
 });
 
@@ -157,45 +179,68 @@ app.get('/api/sensors/:sensorId/latest', async (req, res) => {
     }
 });
 
-// Récupérer le dernier message de tous les capteurs connus
-app.get('/api/sensors/known/latest', async (req, res) => {
+// Récupérer l'historique d'un capteur spécifique
+app.get('/api/sensors/:sensorId/history', async (req, res) => {
+    const {sensorId} = req.params;
+
     try {
-        const knownSensors = await db.collection('known_sensors').find().toArray();
-        const messages = await Promise.all(
-            knownSensors.map(async sensor => {
-                const message = await db.collection('messages')
-                    .find({ sensor_id: sensor.sensor_id })
-                    .sort({ timestamp: -1 })
-                    .limit(1)
-                    .toArray();
-                return message[0] || null;
-            })
-        );
-        res.json(messages.filter(msg => msg !== null));
+        // Recherche des messages correspondant au capteur
+        const history = await db.collection('messages')
+            .find({sensor_id: sensorId})
+            .sort({timestamp: 1})
+            .toArray();
+
+        if (history.length > 0) {
+            res.json(history);
+        } else {
+            res.status(404).json({error: `Aucun historique trouvé pour le capteur ${sensorId}`});
+        }
     } catch (err) {
-        res.status(500).json({ error: 'Erreur lors de la récupération des derniers messages des capteurs connus' });
+        console.error('[ERREUR]', err);
+        res.status(500).json({error: 'Erreur lors de la récupération de l\'historique du capteur'});
     }
 });
+
 
 // Définir ou modifier les informations d'un capteur
 app.put('/api/sensors/:sensorId', async (req, res) => {
     const { sensorId } = req.params;
     const updateData = req.body;
-    const collection = updateData.status === 'known' ? 'known_sensors' : 'unknown_sensors';
 
     try {
-        const result = await db.collection(collection).updateOne(
-            { sensor_id: sensorId },
-            { $set: updateData },
-            { upsert: true }
-        );
+        const unknownDevice = await db.collection('unknown_devices').findOne({sensor_id: sensorId});
 
-        if (result.matchedCount > 0) {
-            res.json({ message: `Capteur ${sensorId} mis à jour`, updateData });
-        } else {
-            res.json({ message: `Capteur ${sensorId} créé`, updateData });
+        if (unknownDevice) {
+            // Mettre à jour et déplacer dans known_devices
+            await db.collection('known_devices').updateOne(
+                {sensor_id: sensorId},
+                {$set: {...unknownDevice, ...updateData}}, // Fusionner les anciennes et nouvelles données
+                {upsert: true}
+            );
+
+            // Supprimer de unknown_devices
+            await db.collection('unknown_devices').deleteOne({sensor_id: sensorId});
+
+            return res.json({message: `Capteur ${sensorId} déplacé vers known_devices et mis à jour`});
         }
+
+        // Vérifier dans known_devices
+        const knownDevice = await db.collection('known_devices').findOne({sensor_id: sensorId});
+
+        if (knownDevice) {
+            // Mettre à jour dans known_devices
+            await db.collection('known_devices').updateOne(
+                {sensor_id: sensorId},
+                {$set: updateData}
+            );
+
+            return res.json({message: `Capteur ${sensorId} mis à jour dans known_devices`});
+        }
+
+        // Si non trouvé dans aucune collection
+        return res.status(404).json({error: `Capteur ${sensorId} introuvable dans unknown_devices ou known_devices`});
     } catch (err) {
+        console.error('[ERREUR]', err);
         res.status(500).json({ error: 'Erreur lors de la mise à jour des informations du capteur' });
     }
 });

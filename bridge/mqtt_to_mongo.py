@@ -55,7 +55,11 @@ def process_ping(message, payload):
 def process_message(message, payload):
     data = {
         "topic": message.topic,
-        "payload": payload,
+        "sensor_id": get_payload_property(payload, "sensor_id"),
+        "type": get_payload_property(payload, "type"),
+        "value": get_payload_property(payload, "value"),
+        "unit": get_payload_property(payload, "unit"),
+        "timestamp": get_payload_property(payload, "timestamp"),
         "qos": message.qos
     }
     print(f"[INFO] Message reçu : {data}")
