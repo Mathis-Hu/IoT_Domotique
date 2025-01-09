@@ -109,6 +109,54 @@ services:
     deploy:
       replicas: 1
 
+  air_quality_sensor:
+    build: ./sensors/air_quality_sensor
+    depends_on:
+      - bridge
+    volumes:
+      - ./sensors/air_quality_sensor/certs:/app/certs
+    restart: unless-stopped
+    networks:
+      - iot_network
+    deploy:
+      replicas: 1
+
+  movement_sensor:
+    build: ./sensors/movement_sensor
+    depends_on:
+      - bridge
+    volumes:
+      - ./sensors/movement_sensor/certs:/app/certs
+    restart: unless-stopped
+    networks:
+      - iot_network
+    deploy:
+      replicas: 1
+
+  shutters_sensor:
+    build: ./sensors/shutters_sensor
+    depends_on:
+      - bridge
+    volumes:
+      - ./sensors/shutters_sensor/certs:/app/certs
+    restart: unless-stopped
+    networks:
+      - iot_network
+    deploy:
+      replicas: 1
+
+  light_bulb_sensor:
+    build: ./sensors/light_bulb_sensor
+    depends_on:
+      - bridge
+    volumes:
+      - ./sensors/light_bulb_sensor/certs:/app/certs
+    restart: unless-stopped
+    networks:
+      - iot_network
+    deploy:
+      replicas: 1
+
 networks:
   iot_network:
     driver: bridge
