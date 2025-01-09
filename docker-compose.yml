@@ -5,7 +5,7 @@ services:
     ports:
       - "27017:27017"
     volumes:
-      - C:/Users/zaoua/Documents/IoT/volumes/mongo-data:/data/db
+      - C:/Users/lucie/Documents/IoT/volumes/mongo-data:/data/db
     restart: unless-stopped
     networks:
       - iot_network
@@ -19,8 +19,9 @@ services:
     volumes:
       - ./mosquitto:/mosquitto/config
       - ./mosquitto/certs:/etc/mosquitto/certs
-      - C:/Users/zaoua/Documents/IoT/volumes/mosquitto-data:/mosquitto/data
-      - C:/Users/zaoua/Documents/IoT/volumes/mosquitto-logs:/mosquitto/log
+      - C:/Users/lucie/Documents/IoT/volumes/mosquitto-data:/mosquitto/data
+      - C:/Users/lucie/Documents/IoT/volumes/mosquitto-logs:/mosquitto/log
+
     restart: unless-stopped
     networks:
       iot_network:
