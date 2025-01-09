@@ -1,8 +1,8 @@
-import React, {useEffect, useState} from "react";
-import {useNavigate, useParams} from "react-router-dom";
-import {Sensor} from "../models/sensor.ts";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Sensor } from "../models/sensor.ts";
 import axios from "axios";
-import {Line} from "react-chartjs-2";
+import { Line } from "react-chartjs-2";
 import {
     CategoryScale,
     Chart as ChartJS,
@@ -21,7 +21,7 @@ import SensorStatus from "../components/SensorStatus.tsx";
 ChartJS.register(LineElement, PointElement, LinearScale, Title, Tooltip, Legend, CategoryScale);
 
 const SensorDetails: React.FC = () => {
-    const {id} = useParams(); // Récupérer l'ID du capteur depuis l'URL
+    const { id } = useParams(); // Récupérer l'ID du capteur depuis l'URL
     const navigate = useNavigate(); // Hook pour naviguer entre les pages
 
     const [sensor, setSensor] = useState<Sensor | null>(null); // État pour stocker les détails du capteur
@@ -244,7 +244,7 @@ const SensorDetails: React.FC = () => {
                     stroke="currentColor"
                     className="w-5 h-5 mr-2"
                 >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
                 Retour
             </button>
@@ -253,7 +253,7 @@ const SensorDetails: React.FC = () => {
                 : {sensor?.name || "Chargement..."}</h1>
 
             <SensorStatus status={sensor?.status || "offline"}
-                          className="left-4 flex items-center space-x-2"/>
+                className="left-4 flex items-center space-x-2" />
 
             {/* Formulaire de modification */}
             <SensorEditForm
@@ -273,15 +273,17 @@ const SensorDetails: React.FC = () => {
             />
 
 
-            <div className="flex mt-8 space-x-8">
-                <SensorHistoryTable filteredHistory={filteredHistory}/>
+            <div className="flex lg:flex-nowrap flex-wrap mt-8 gap-8">
+                <div className="w-full lg:w-1/2">
+                    <SensorHistoryTable filteredHistory={filteredHistory} />
+                </div>
 
                 {sensor?.type === "periodic" && (
-                    <div className="flex-1">
+                    <div className="w-full lg:w-1/2">
                         <div className="bg-gray-800 p-4 rounded-lg">
                             <h2 className="text-xl font-bold text-white mb-4">Graphique</h2>
-                            <div style={{height: "300px", width: "100%"}}>
-                                <Line data={chartData} options={chartOptions}/>
+                            <div style={{ height: "300px", width: "100%" }}>
+                                <Line data={chartData} options={chartOptions} />
                             </div>
                         </div>
                     </div>

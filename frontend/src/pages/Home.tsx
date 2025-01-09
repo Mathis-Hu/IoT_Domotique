@@ -1,17 +1,15 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import PeriodSensors from '../components/PeriodSensors';
 import axios from 'axios';
-import {Sensor} from "../models/sensor.ts";
+import { Sensor } from "../models/sensor.ts";
 
 const Home: React.FC = () => {
     const [sensors, setSensors] = useState<Sensor[]>([]); // Tous les capteurs récupérés
     const [filteredSensors, setFilteredSensors] = useState<Sensor[]>([]); // Capteurs filtrés
-
     const [searchTerm, setSearchTerm] = useState<string>(""); // Barre de recherche
     const [selectedType, setSelectedType] = useState<string>(""); // Filtre par type
     const [selectedRoom, setSelectedRoom] = useState<string>(""); // Filtre par pièce
-
-    const [rooms, setRooms] = useState<string[]>([]); // Liste des pièces disponibles
+    const [rooms, setRooms] = useState<string[]>([]); // Liste des pièces disponibles 
 
     // Récupérer les capteurs avec leurs dernières valeurs
     const fetchSensors = () => {
@@ -149,47 +147,56 @@ const Home: React.FC = () => {
 
     return (
         <div>
-            {/* Barre de recherche et filtre */}
+            {/* Search and Filter Section */}
             <div className="w-full px-6 py-4">
-                <div className="flex items-center space-x-4">
-                    {/* Barre de recherche */}
-                    <input
-                        type="text"
-                        placeholder="Rechercher..."
-                        className="w-1/3 px-4 py-3 rounded-md bg-gray-700 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)} // Met à jour le terme de recherche
-                    />
+                <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:space-x-4">
+                    {/* Search Bar */}
+                    <div className="flex-grow mt-7">
+                        <input
+                            type="text"
+                            placeholder="Rechercher..."
+                            className="w-full px-4 py-3 rounded-md bg-gray-700 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
 
-                    {/* Menu déroulant pour filtrer Types */}
-                    <h1 className="text-gray-100">Types : </h1>
-                    <select
-                        className="w-1/4 px-6 py-3 rounded-md bg-gray-700 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                        value={selectedType}
-                        onChange={(e) => setSelectedType(e.target.value)} // Met à jour le filtre de type
-                    >
-                        <option value="">Tous</option>
-                        <option value="Active">Active</option>
-                        <option value="Inactive">Inactive</option>
-                        <option value="Error">Error</option>
-                    </select>
+                    {/* Filter by Type */}
+                    <div className="flex-grow">
+                        <label htmlFor="typeFilter" className="block text-sm mb-2 text-gray-100">Type :</label>
+                        <select
+                            id="typeFilter"
+                            className="w-full px-4 py-3 rounded-md bg-gray-700 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                            value={selectedType}
+                            onChange={(e) => setSelectedType(e.target.value)}
+                        >
+                            <option value="">Tous</option>
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                            <option value="Error">Error</option>
+                        </select>
+                    </div>
 
-                    {/* Menu déroulant pour filtrer Pièces */}
-                    <h1 className="text-gray-100">Pièces : </h1>
-                    <select
-                        className="w-1/4 px-6 py-3 rounded-md bg-gray-700 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                        value={selectedRoom}
-                        onChange={(e) => setSelectedRoom(e.target.value)} // Met à jour le filtre de pièce
-                    >
-                        <option value="">Tous</option>
-                        {rooms.map((room, index) => (
-                            <option key={index} value={room}>
-                                {room}
-                            </option>
-                        ))}
-                    </select>
+                    {/* Filter by Room */}
+                    <div className="flex-grow">
+                        <label htmlFor="roomFilter" className="block text-sm mb-2 text-gray-100">Pièces :</label>
+                        <select
+                            id="roomFilter"
+                            className="w-full px-4 py-3 rounded-md bg-gray-700 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                            value={selectedRoom}
+                            onChange={(e) => setSelectedRoom(e.target.value)}
+                        >
+                            <option value="">Tous</option>
+                            {rooms.map((room, index) => (
+                                <option key={index} value={room}>
+                                    {room}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
             </div>
+
 
             <main className="flex flex-wrap gap-8 justify-center mt-5">
                 {/* Contenu principal */}

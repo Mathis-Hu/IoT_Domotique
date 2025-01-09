@@ -14,7 +14,7 @@ const SelectStartEndDate: React.FC<SelectStartEndDateProps> = ({
                                                                    setEndDate,
                                                                }) => {
     return (
-        <div className="flex space-x-4 mt-6">
+        <div className="flex space-x-4 mt-6 ">
             <div>
                 <label className="text-white">Date de début :</label>
                 <input
