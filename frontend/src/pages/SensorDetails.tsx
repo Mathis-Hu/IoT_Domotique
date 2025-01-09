@@ -40,8 +40,6 @@ const SensorDetails: React.FC = () => {
                 if (res.status === 200) {
                     setSensor(res.data); // Stocker les détails du capteur
                     setUpdatedSensor(res.data); // Initialiser les valeurs modifiables
-                    console.log("Sensor", res.data);
-
                 } else {
                     console.error("Erreur lors de l'appel : ", res);
                 }
@@ -90,7 +88,6 @@ const SensorDetails: React.FC = () => {
                     if (res.status === 200) {
                         fetchSensor(); // Récupérer les détails mis à jour
                         setIsEditable(false); // Désactiver la modification
-                        console.log("Capteur mis à jour avec succès :", res.data);
                     } else {
                         console.error("Erreur lors de l'appel PUT : ", res);
                     }
@@ -212,7 +209,6 @@ const SensorDetails: React.FC = () => {
                             newDate.setHours(newDate.getHours() + 1);
                             setEndDate(newDate.toISOString().slice(0, 19));
 
-                            console.log('New value received and added to history:', newHistoryEntry);
                             return;
                         }
                     }
