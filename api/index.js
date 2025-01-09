@@ -1,10 +1,9 @@
 import express from 'express';
-import { connect } from 'mqtt';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import { WebSocketServer, WebSocket } from 'ws';
+import {connect} from 'mqtt';
+import {readFileSync} from 'fs';
+import {dirname, resolve} from 'path';
+import {fileURLToPath} from 'url';
+import {WebSocket} from 'ws';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -14,12 +13,12 @@ const port = 3000;
 const wsPort = 3001;
 
 // Chemins des certificats SSL
-const caFile = resolve(__dirname, 'ca.crt'); 
-const certFile = resolve(__dirname, 'client.crt'); 
-const keyFile = resolve(__dirname, 'client.key'); 
+const caFile = resolve(__dirname, 'certs/ca.crt');
+const certFile = resolve(__dirname, 'certs/client.crt');
+const keyFile = resolve(__dirname, 'certs/client.key');
 
 // Configuration MQTT avec SSL
-const brokerUrl = 'mqtts://localhost:8883'; 
+const brokerUrl = process.env.BROKER_URL || 'mqtts://localhost:8883';
 const mqttOptions = {
     clientId: 'mqtt_client_' + Math.random().toString(16).substr(2, 8),
     clean: true,

@@ -44,6 +44,8 @@ services:
     depends_on:
       - mongo
       - mosquitto
+    environment:
+      - BROKER_URL=mqtt://192.168.2.10:8883
     ports:
       - "3000:3000"
     restart: unless-stopped
