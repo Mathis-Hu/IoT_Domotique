@@ -69,7 +69,8 @@ def process_message(message, payload):
     print(f"[INFO] Message sauvegardé : {data}")
 
 
-# Vérification de l'existence du "sensor_id" dans les collections "known_devices" et "unknown_devices"
+# Vé
+# rification de l'existence du "sensor_id" dans les collections "known_devices" et "unknown_devices"
 def process_sensor(message, payload):
     try:
         # Analyse de la payload pour vérifier le "sensor_id"
@@ -83,7 +84,8 @@ def process_sensor(message, payload):
                         "sensor_id": sensor_id,
                         "name": f"Nouveau capteur ({get_payload_property(payload, 'original_topic')})" if message.topic == "ping" else f"Nouveau capteur ({message.topic})",
                         "room": "",
-                        "status": "connected"
+                        "status": "connected",
+                        "type": get_payload_property(payload, "type")
                     }
                     unknown_devices_collection.insert_one(data)
                     print(f"[INFO] Sensor ID ajouté à unknown_devices : {sensor_id}")

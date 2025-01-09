@@ -88,16 +88,24 @@ const Home: React.FC = () => {
                     const updatedSensor = JSON.parse(parsedData.message); // Parse the nested message field
 
                     if (parsedData.topic === 'ping') {
-                        setSensors((prevSensors) =>
-                            prevSensors.map((sensor) =>
-                                sensor.sensor_id === updatedSensor.sensor_id
-                                    ? {
-                                        ...sensor,
-                                        status: updatedSensor.status
-                                    }
-                                    : sensor
-                            )
-                        );
+                        // Vérifie si le capteur existe déjà
+                        const existingSensor = sensors.find(sensor => sensor.sensor_id === updatedSensor.sensor_id);
+                        if (!existingSensor) {
+                            // Ajouter le nouveau capteur
+                            fetchSensors();
+                        } else {
+                            // Met à jour le statut du capteur
+                            setSensors((prevSensors) =>
+                                prevSensors.map((sensor) =>
+                                    sensor.sensor_id === updatedSensor.sensor_id
+                                        ? {
+                                            ...sensor,
+                                            status: updatedSensor.status
+                                        }
+                                        : sensor
+                                )
+                            );
+                        }
                         return;
                     } else {
                         setSensors((prevSensors) =>
@@ -122,15 +130,12 @@ const Home: React.FC = () => {
             console.log('WebSocket disconnected');
         };
 
-        ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
-        };
-
         // Fermer la connexion WebSocket lors du démontage
         return () => {
             ws.close();
         };
     }, []);
+
 
     // Mettre à jour les capteurs filtrés à chaque modification des filtres
     useEffect(() => {
@@ -188,24 +193,19 @@ const Home: React.FC = () => {
 
             <main className="flex flex-wrap gap-8 justify-center mt-5">
                 {/* Contenu principal */}
-                {filteredSensors.map((sensor, index) => {
-                    if (sensor.type === "periodic") {
-                        return (
-                            <PeriodSensors
-                                key={index}
-                                _id={sensor._id}
-                                sensor_id={sensor.sensor_id}
-                                name={sensor.name}
-                                room={sensor.room}
-                                status={sensor.status}
-                                last_value={sensor.last_value}
-                                unit={sensor.unit}
-                                type={sensor.type}
-                            />
-                        );
-                    }
-                    return null; // Ajout d'un retour par défaut pour éviter une erreur
-                })}
+                {filteredSensors.map((sensor, index) => (
+                    <PeriodSensors
+                        key={index}
+                        _id={sensor._id}
+                        sensor_id={sensor.sensor_id}
+                        name={sensor.name}
+                        room={sensor.room}
+                        status={sensor.status}
+                        last_value={sensor.last_value}
+                        unit={sensor.unit}
+                        type={sensor.type}
+                    />
+                ))}
             </main>
 
         </div>

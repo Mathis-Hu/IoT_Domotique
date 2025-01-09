@@ -13,6 +13,10 @@ import {
     Title,
     Tooltip
 } from "chart.js";
+import SensorEditForm from "../components/SensorEditForm.tsx";
+import SelectStartEndDate from "../components/SelectStartEndDate.tsx";
+import SensorHistoryTable from "../components/SensorHistoryTable.tsx";
+import SensorStatus from "../components/SensorStatus.tsx";
 
 ChartJS.register(LineElement, PointElement, LinearScale, Title, Tooltip, Legend, CategoryScale);
 
@@ -36,6 +40,8 @@ const SensorDetails: React.FC = () => {
                 if (res.status === 200) {
                     setSensor(res.data); // Stocker les détails du capteur
                     setUpdatedSensor(res.data); // Initialiser les valeurs modifiables
+                    console.log("Sensor", res.data);
+
                 } else {
                     console.error("Erreur lors de l'appel : ", res);
                 }
@@ -62,7 +68,10 @@ const SensorDetails: React.FC = () => {
                     const oldestDate = new Date(Math.min(...timestamps));
                     const latestDate = new Date(Math.max(...timestamps));
 
+                    //setstartdate with 1 hour added
+                    oldestDate.setHours(oldestDate.getHours() + 1);
                     setStartDate(oldestDate.toISOString().slice(0, 19)); // Format for datetime-local
+                    latestDate.setHours(latestDate.getHours() + 1);
                     setEndDate(latestDate.toISOString().slice(0, 19));
                 } else {
                     console.error("Erreur lors de l'appel à l'historique : ", res);
@@ -79,7 +88,7 @@ const SensorDetails: React.FC = () => {
             axios.put(`http://localhost:3000/api/sensors/${id}`, updatedSensor)
                 .then(res => {
                     if (res.status === 200) {
-                        setSensor(res.data); // Met à jour l'état avec la réponse
+                        fetchSensor(); // Récupérer les détails mis à jour
                         setIsEditable(false); // Désactiver la modification
                         console.log("Capteur mis à jour avec succès :", res.data);
                     } else {
@@ -157,6 +166,73 @@ const SensorDetails: React.FC = () => {
         },
     };
 
+    // Connexion WebSocket
+    useEffect(() => {
+        const ws = new WebSocket('ws://localhost:3001');
+
+        ws.onopen = () => {
+            console.log('WebSocket connected');
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const parsedData = JSON.parse(event.data); // Parse the outer structure
+
+                if (parsedData.message) {
+                    const updatedSensor = JSON.parse(parsedData.message); // Parse the nested message field
+
+                    if (updatedSensor.sensor_id === id) {
+                        if (parsedData.topic === 'ping') {
+                            // Met à jour le status du capteur
+                            // {topic: 'ping', message: '{"sensor_id": "6d162c67e4e2", "status": "disconnec…re", "type": "periodic", "timestamp": 1736452422}'}
+                            setSensor((prevSensor) => {
+                                if (prevSensor) {
+                                    return {
+                                        ...prevSensor,
+                                        status: updatedSensor.status,
+                                    };
+                                }
+                                return prevSensor;
+                            });
+                            return;
+                        } else {
+                            // Ajout de la nouvelle valeur à l'historique
+                            const newHistoryEntry = {
+                                timestamp: updatedSensor.timestamp,
+                                value: updatedSensor.value,
+                                unit: updatedSensor.unit,
+                            };
+
+                            setHistory((prevHistory) => [...prevHistory, newHistoryEntry]);
+                            setFilteredHistory((prevFilteredHistory) => [...prevFilteredHistory, newHistoryEntry]);
+
+                            // Mise à jour du filtre de date de fin
+                            const newTimestamp = updatedSensor.timestamp * 1000;
+                            const newDate = new Date(newTimestamp);
+                            newDate.setHours(newDate.getHours() + 1);
+                            setEndDate(newDate.toISOString().slice(0, 19));
+
+                            console.log('New value received and added to history:', newHistoryEntry);
+                            return;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Erreur lors du traitement des données WebSocket :', error);
+            }
+        };
+
+        ws.onclose = () => {
+            console.log('WebSocket disconnected');
+        };
+
+        // Fermer la connexion WebSocket lors du démontage
+        return () => {
+            ws.close();
+        };
+    }, [id]);
+
+
     return (
         <div className="p-6">
             {/* Flèche de retour */}
@@ -180,116 +256,40 @@ const SensorDetails: React.FC = () => {
             <h1 className="text-2xl font-bold text-white mt-7">Détails du Capteur
                 : {sensor?.name || "Chargement..."}</h1>
 
-            {/* Formulaire pour modifier les détails du capteur */}
-            <form
-                className="mt-6"
-                onSubmit={(e) => {
-                    e.preventDefault();
-                    saveSensor(); // Appel de l'API PUT lors de la soumission
-                }}
-            >
-                <label htmlFor="name" className="block text-sm font-medium text-gray-100">
-                    Nom
-                </label>
-                <input
-                    type="text"
-                    name="name"
-                    id="name"
-                    className="mt-1 p-2 rounded-lg w-full bg-gray-800 border border-transparent text-gray-100"
-                    value={updatedSensor?.name || ""}
-                    onChange={handleChange}
-                    disabled={!isEditable}
-                />
+            <SensorStatus status={sensor?.status || "offline"}
+                          className="left-4 flex items-center space-x-2"/>
 
-                <label htmlFor="room" className="block text-sm font-medium text-gray-100 mt-4">
-                    Pièce
-                </label>
-                <input
-                    type="text"
-                    name="room"
-                    id="room"
-                    className="mt-1 p-2 rounded-lg w-full bg-gray-800 border border-transparent text-gray-100"
-                    value={updatedSensor?.room || ""}
-                    onChange={handleChange}
-                    disabled={!isEditable}
-                />
-
-                {/* Boutons d'actions */}
-                <div className="mt-6 flex space-x-4">
-                    <button
-                        type="button"
-                        className="bg-blue-500 text-white p-2 rounded-lg cursor-pointer"
-                        onClick={() => setIsEditable(!isEditable)} // Activer/désactiver la modification
-                    >
-                        {isEditable ? "Annuler" : "Modifier"}
-                    </button>
-
-                    {isEditable && (
-                        <button
-                            type="submit"
-                            className="bg-green-500 text-white p-2 rounded-lg cursor-pointer"
-                        >
-                            Enregistrer
-                        </button>
-                    )}
-                </div>
-            </form>
+            {/* Formulaire de modification */}
+            <SensorEditForm
+                updatedSensor={updatedSensor}
+                isEditable={isEditable}
+                setIsEditable={setIsEditable}
+                handleChange={handleChange}
+                saveSensor={saveSensor}
+            />
 
             {/* Tableau + Graphique en ligne */}
-            <div className="flex space-x-4 mt-6">
-                <div>
-                    <label className="text-white">Date de début :</label>
-                    <input
-                        type="datetime-local"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        className="ml-2 p-2 rounded-md bg-gray-700 text-white"
-                    />
-                </div>
-                <div>
-                    <label className="text-white">Date de fin :</label>
-                    <input
-                        type="datetime-local"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        className="ml-2 p-2 rounded-md bg-gray-700 text-white"
-                    />
-                </div>
-            </div>
+            <SelectStartEndDate
+                startDate={startDate}
+                endDate={endDate}
+                setStartDate={setStartDate}
+                setEndDate={setEndDate}
+            />
+
 
             <div className="flex mt-8 space-x-8">
-                <div className="flex-1 bg-gray-800 p-4 rounded-lg overflow-y-auto max-h-96">
-                    <h2 className="text-xl font-bold text-white mb-4">Historique des Valeurs</h2>
-                    <table className="w-full text-left text-gray-100">
-                        <thead>
-                        <tr>
-                            <th className="border-b border-gray-700 p-2">Date</th>
-                            <th className="border-b border-gray-700 p-2">Valeur</th>
-                            <th className="border-b border-gray-700 p-2">Unité</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {filteredHistory.map((entry, index) => (
-                            <tr key={index}>
-                                <td className="p-2 border-b border-gray-700">
-                                    {new Date(entry.timestamp * 1000).toLocaleString()}
-                                </td>
-                                <td className="p-2 border-b border-gray-700">{entry.value}</td>
-                                <td className="p-2 border-b border-gray-700">{entry.unit}</td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                </div>
+                <SensorHistoryTable filteredHistory={filteredHistory}/>
 
-                <div className="flex-1">
-                    <div className="bg-gray-800 p-4 rounded-lg">
-                        <h2 className="text-xl font-bold text-white mb-4">Graphique</h2>
-                        <div style={{height: "300px", width: "100%"}}>
-                            <Line data={chartData} options={chartOptions}/>
+                {sensor?.type === "periodic" && (
+                    <div className="flex-1">
+                        <div className="bg-gray-800 p-4 rounded-lg">
+                            <h2 className="text-xl font-bold text-white mb-4">Graphique</h2>
+                            <div style={{height: "300px", width: "100%"}}>
+                                <Line data={chartData} options={chartOptions}/>
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
             </div>
         </div>
     );

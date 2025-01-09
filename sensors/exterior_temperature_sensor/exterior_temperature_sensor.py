@@ -15,7 +15,7 @@ import paho.mqtt.client as mqtt
 TOPIC = os.getenv("TOPIC", "temperature")  # Topic à modifier par capteur
 TYPE = "periodic"  # type du capteur, "periodic" or "event"
 UNIT = "°C"  # Unité du capteur
-DELAY_PERIODIC = 1  # délai en secondes, si capteur de type périodique, par défaut 5 minutes
+DELAY_PERIODIC = 5  # délai en secondes, si capteur de type périodique, par défaut 5 minutes
 DELAY_EVENT_MIN = 3 * 60  # délai minimum en secondes, si capteur de type événement, par défaut 3 minutes
 DELAY_EVENT_MAX = 15 * 60  # délai maximum en secondes, si capteur de type événement, par défaut 15 minutes
 previous_value = None  # valeur précédente, surtout utile pour les capteurs de type événement
@@ -183,6 +183,7 @@ def on_connect(client, userdata, flags, rc):
             "sensor_id": SENSOR_ID,
             "status": "connected",
             "original_topic": TOPIC,
+            "type": TYPE,
             "timestamp": int(time.time())
         }), qos=1)
     else:
@@ -197,6 +198,7 @@ def on_disconnect(client, userdata, rc):
             "sensor_id": SENSOR_ID,
             "status": "disconnected_unexpectedly",
             "original_topic": TOPIC,
+            "type": TYPE,
             "timestamp": int(time.time())
         }), qos=1)
     else:
@@ -206,6 +208,7 @@ def on_disconnect(client, userdata, rc):
             "sensor_id": SENSOR_ID,
             "status": "disconnected",
             "original_topic": TOPIC,
+            "type": TYPE,
             "timestamp": int(time.time())
         }), qos=1)
 
@@ -262,6 +265,7 @@ def main():
                     "sensor_id": SENSOR_ID,
                     "status": "disconnected_unexpectedly",
                     "original_topic": TOPIC,
+                    "type": TYPE,
                     "timestamp": int(time.time())
                 }), qos=1, retain=True)
 

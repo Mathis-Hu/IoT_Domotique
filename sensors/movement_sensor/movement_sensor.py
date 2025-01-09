@@ -93,6 +93,7 @@ def on_connect(client, userdata, flags, rc):
             "sensor_id": SENSOR_ID,
             "status": "connected",
             "original_topic": TOPIC,
+            "type": TYPE,
             "timestamp": int(time.time())
         }), qos=1)
     else:
@@ -107,6 +108,7 @@ def on_disconnect(client, userdata, rc):
             "sensor_id": SENSOR_ID,
             "status": "disconnected_unexpectedly",
             "original_topic": TOPIC,
+            "type": TYPE,
             "timestamp": int(time.time())
         }), qos=1)
     else:
@@ -116,6 +118,7 @@ def on_disconnect(client, userdata, rc):
             "sensor_id": SENSOR_ID,
             "status": "disconnected",
             "original_topic": TOPIC,
+            "type": TYPE,
             "timestamp": int(time.time())
         }), qos=1)
 
@@ -172,6 +175,7 @@ def main():
                     "sensor_id": SENSOR_ID,
                     "status": "disconnected_unexpectedly",
                     "original_topic": TOPIC,
+                    "type": TYPE,
                     "timestamp": int(time.time())
                 }), qos=1, retain=True)
 
