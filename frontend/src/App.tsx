@@ -1,18 +1,19 @@
-import './App.css'
+import React from 'react';
+import Home from './pages/Home'
+import SensorDetails from './components/SensorDetails'
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
-function App() {
-  
+const App: React.FC = () => {
+    return (
+      <>
+        <BrowserRouter>
+        <Routes>
+          <Route path='/' element={<Home />}></Route>
+          <Route path="/sensor/:id" element={<SensorDetails />} />
+          </Routes>
+      </BrowserRouter>
+      </>
+    );
+};
 
-  return (
-    <>
-      <div>
-
-        Hello
-      
-      </div>
-        
-    </>
-  )
-}
-
-export default App
+export default App;
