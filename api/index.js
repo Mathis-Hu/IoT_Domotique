@@ -1,79 +1,85 @@
 import express from 'express';
-import bodyParser from 'body-parser';
-import mqtt from 'mqtt';
-import WebSocket from 'ws';
-import mongoose from 'mongoose';
-import cors from 'cors';
+import { connect } from 'mqtt';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import { WebSocketServer, WebSocket } from 'ws';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const port = 3000;
+const wsPort = 3001;
 
-app.use(cors());
+// Chemins des certificats SSL
+const caFile = resolve(__dirname, 'ca.crt'); 
+const certFile = resolve(__dirname, 'client.crt'); 
+const keyFile = resolve(__dirname, 'client.key'); 
 
-app.use(cors({
-    origin: 'http://localhost:5173', // Autorise seulement cette origine
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Autorise ces méthodes HTTP
-    allowedHeaders: ['Content-Type', 'Authorization'] // Autorise ces en-têtes
-}));
-
-// Middleware pour parser le JSON
-app.use(bodyParser.json());
+// Configuration MQTT avec SSL
+const brokerUrl = 'mqtts://localhost:8883'; 
+const mqttOptions = {
+    clientId: 'mqtt_client_' + Math.random().toString(16).substr(2, 8),
+    clean: true,
+    connectTimeout: 4000,
+    key: readFileSync(keyFile), 
+    cert: readFileSync(certFile),
+    ca: readFileSync(caFile), 
+    rejectUnauthorized: true,
+};
 
 // Connexion au broker MQTT
-const mqttClient = mqtt.connect("mqtt://<adresse_broker>");
-mqttClient.on("connect", () => {
-    console.log("Connecté au broker MQTT");
-    mqttClient.subscribe("#", (err) => {
-        if (!err) {
-            console.log("Souscrit à tous les topics MQTT");
+const mqttClient = connect(brokerUrl, mqttOptions);
+
+// Gestion des événements MQTT
+mqttClient.on('connect', () => {
+    console.log('Connecté au broker MQTT avec SSL');
+    // Souscription au topic générique
+    mqttClient.subscribe('#', (err) => {
+        if (err) {
+            console.error('Erreur lors de la souscription au topic # :', err);
         } else {
-            console.error("Erreur de souscription :", err);
+            console.log('Souscription réussie au topic #');
         }
     });
 });
 
-// Gestion des WebSockets
-const wss = new WebSocket.Server({noServer: true});
-let wsClients = [];
 
-// Envoie des messages MQTT aux clients WebSocket connectés
-mqttClient.on("message", (topic, message) => {
-    console.log(`MQTT -> Topic: ${topic}, Message: ${message.toString()}`);
-    wsClients.forEach((ws) => {
-        ws.send(JSON.stringify({topic, message: message.toString()}));
+// Lancer le serveur
+app.listen(port, () => {
+    console.log(`Serveur Express lancé sur http://localhost:${port}`);
+});
+
+// Clients connectés au WebSocket
+const webSocketClients = [];
+
+mqttClient.on('message', (topic, message) => {
+    console.log(`Message MQTT reçu : Topic = ${topic}, Message = ${message.toString()}`);
+
+    // Diffuser le message reçu à tous les clients WebSocket connectés
+    webSocketClients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({ topic, message: message.toString() }));
+        }
     });
 });
 
-// Endpoint REST pour récupérer l'historique des messages
-let messageHistory = []; // Stocke un historique local des messages
-mqttClient.on("message", (topic, message) => {
-    messageHistory.push({topic, message: message.toString()});
+// Démarrer le serveur WebSocket
+const wss = new WebSocket.Server({ port: wsPort }, () => {
+    console.log(`Serveur WebSocket lancé sur ws://localhost:${wsPort}`);
 });
 
-// Configuration des WebSockets
-wss.on("connection", (ws) => {
-    console.log("Client WebSocket connecté");
-    wsClients.push(ws);
+// Handle les connexions des nouveaux clients au websocket
+wss.on('connection', (ws) => {
+    // Ajoute le client à la liste des clients
+    console.log('Client WebSocket connecté');
+    webSocketClients.push(ws);
 
-    ws.on("close", () => {
-        console.log("Client WebSocket déconnecté");
-        wsClients = wsClients.filter((client) => client !== ws);
+    ws.on('close', () => {
+        console.log('Client WebSocket déconnecté');
+        const index = webSocketClients.indexOf(ws);
+        if (index !== -1) webSocketClients.splice(index, 1);
     });
 });
-
-// Gestion du serveur Express avec WebSocket intégré
-const server = app.listen(port, () => {
-    console.log(`API en écoute sur http://localhost:${port}`);
-});
-
-server.on("upgrade", (request, socket, head) => {
-    wss.handleUpgrade(request, socket, head, (ws) => {
-        wss.emit("connection", ws, request);
-    });
-});
-
-// Connexion à MongoDB
-mongoose.connect('mongodb://mongo:27017/mqtt', {useNewUrlParser: true, useUnifiedTopology: true})
-    .then(() => console.log('MongoDB connected'))
-    .catch(err => console.error('MongoDB connection error:', err));
