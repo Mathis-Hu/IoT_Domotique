@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect }  from 'react';
 import EventSensors from '../components/EventSensors';
 import PeriodSensors from '../components/PeriodSensors';
+import axios from 'axios';
+
 
 const Home: React.FC = () => {
     const sensorData = {
@@ -21,6 +23,27 @@ const Home: React.FC = () => {
         timestamp: 1736431869,
         qos: 0,
     };
+
+
+    const [sensorDaata, setSensorDaata ] = useState([]);
+
+    const fetchSensors = () => {
+        axios.get('http://localhost:3000/api/sensors/all')
+            .then(res => {
+                if (res.status) {
+                    setSensorDaata(res.data);
+                    console.log(res);
+                } else {
+                    console.error(res);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching sensors:', error);
+            });
+    };
+
+    fetchSensors();
+    
 
     // Exemple de tableau pour plusieurs capteurs
     const sensors = Array(10).fill({
