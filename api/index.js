@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import {connect} from 'mqtt';
 import {readFileSync} from 'fs';
 import {dirname, resolve} from 'path';
@@ -17,7 +18,8 @@ const wsPort = 3001;
 const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017';
 const dbName = process.env.DB_NAME || 'mqtt';
 
-// Middleware pour parser le JSON
+// Configuration du middleware
+app.use(cors());
 app.use(express.json());
 
 // Chemins des certificats SSL
@@ -31,9 +33,9 @@ const mqttOptions = {
     clientId: 'mqtt_client_' + Math.random().toString(16).substr(2, 8),
     clean: true,
     connectTimeout: 4000,
-    key: readFileSync(keyFile), 
+    key: readFileSync(keyFile),
     cert: readFileSync(certFile),
-    ca: readFileSync(caFile), 
+    ca: readFileSync(caFile),
     rejectUnauthorized: true,
 };
 
@@ -68,13 +70,13 @@ mqttClient.on('message', (topic, message) => {
     // Diffuser le message reçu à tous les clients WebSocket connectés
     webSocketClients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({ topic, message: message.toString() }));
+            client.send(JSON.stringify({topic, message: message.toString()}));
         }
     });
 });
 
 // Démarrer le serveur WebSocket
-const wss = new WebSocket.Server({ port: wsPort }, () => {
+const wss = new WebSocket.Server({port: wsPort}, () => {
     console.log(`Serveur WebSocket lancé sur ws://localhost:${wsPort}`);
 });
 
@@ -93,7 +95,7 @@ wss.on('connection', (ws) => {
 
 // Initialisation de la connexion MongoDB
 let db;
-MongoClient.connect(mongoUri, { useNewUrlParser: true, useUnifiedTopology: true })
+MongoClient.connect(mongoUri, {useNewUrlParser: true, useUnifiedTopology: true})
     .then(client => {
         console.log('[INFO] Connecté à MongoDB');
         db = client.db(dbName);
@@ -112,7 +114,7 @@ app.get('/api/sensors/known', async (req, res) => {
         const sensors = await db.collection('known_devices').find().toArray();
         res.json(sensors);
     } catch (err) {
-        res.status(500).json({ error: 'Erreur lors de la récupération des capteurs connus' });
+        res.status(500).json({error: 'Erreur lors de la récupération des capteurs connus'});
     }
 });
 
@@ -122,7 +124,7 @@ app.get('/api/sensors/unknown', async (req, res) => {
         const sensors = await db.collection('unknown_devices').find().toArray();
         res.json(sensors);
     } catch (err) {
-        res.status(500).json({ error: 'Erreur lors de la récupération des capteurs inconnus' });
+        res.status(500).json({error: 'Erreur lors de la récupération des capteurs inconnus'});
     }
 });
 
@@ -133,7 +135,7 @@ app.get('/api/sensors/all', async (req, res) => {
         const unknownSensors = await db.collection('unknown_devices').find().toArray();
         res.json([...knownSensors, ...unknownSensors]);
     } catch (err) {
-        res.status(500).json({ error: 'Erreur lors de la récupération de tous les capteurs' });
+        res.status(500).json({error: 'Erreur lors de la récupération de tous les capteurs'});
     }
 });
 
@@ -162,20 +164,20 @@ app.get('/api/sensors/all/latest', async (req, res) => {
 
 // Récupérer le dernier message d'un capteur spécifique
 app.get('/api/sensors/:sensorId/latest', async (req, res) => {
-    const { sensorId } = req.params;
+    const {sensorId} = req.params;
     try {
         const message = await db.collection('messages')
-            .find({ sensor_id: sensorId })
-            .sort({ timestamp: -1 })
+            .find({sensor_id: sensorId})
+            .sort({timestamp: -1})
             .limit(1)
             .toArray();
         if (message.length) {
             res.json(message[0]);
         } else {
-            res.status(404).json({ error: `Aucun message trouvé pour le capteur ${sensorId}` });
+            res.status(404).json({error: `Aucun message trouvé pour le capteur ${sensorId}`});
         }
     } catch (err) {
-        res.status(500).json({ error: 'Erreur lors de la récupération du dernier message du capteur' });
+        res.status(500).json({error: 'Erreur lors de la récupération du dernier message du capteur'});
     }
 });
 
@@ -201,10 +203,32 @@ app.get('/api/sensors/:sensorId/history', async (req, res) => {
     }
 });
 
+// Récupérer les informations d'un capteur spécifique
+app.get('/api/sensors/:sensorId', async (req, res) => {
+    const {sensorId} = req.params;
+
+    try {
+        const knownDevice = await db.collection('known_devices').findOne({sensor_id: sensorId});
+        if (knownDevice) {
+            res.json(knownDevice);
+        } else {
+            const unknownDevice = await db.collection('unknown_devices').findOne({sensor_id: sensorId});
+            if (unknownDevice) {
+                res.json(unknownDevice);
+            } else {
+                res.status(404).json({error: `Capteur ${sensorId} introuvable`});
+            }
+        }
+    } catch (err) {
+        console.error('[ERREUR]', err);
+        res.status(500).json({error: 'Erreur lors de la récupération des informations du capteur'});
+    }
+});
+
 
 // Définir ou modifier les informations d'un capteur
 app.put('/api/sensors/:sensorId', async (req, res) => {
-    const { sensorId } = req.params;
+    const {sensorId} = req.params;
     const updateData = req.body;
 
     try {
@@ -241,6 +265,6 @@ app.put('/api/sensors/:sensorId', async (req, res) => {
         return res.status(404).json({error: `Capteur ${sensorId} introuvable dans unknown_devices ou known_devices`});
     } catch (err) {
         console.error('[ERREUR]', err);
-        res.status(500).json({ error: 'Erreur lors de la mise à jour des informations du capteur' });
+        res.status(500).json({error: 'Erreur lors de la mise à jour des informations du capteur'});
     }
 });

@@ -1,70 +1,148 @@
-import React, { useState, useEffect }  from 'react';
-import EventSensors from '../components/EventSensors';
+import React, {useEffect, useState} from 'react';
 import PeriodSensors from '../components/PeriodSensors';
 import axios from 'axios';
-
+import {Sensor} from "../models/sensor.ts";
 
 const Home: React.FC = () => {
-    const sensorData = {
-        _id: "677fd664f97f0260ad45e986",
-        sensor_id: "09b40150279a",
-        name: "Nouveau capteur (humidity)",
-        room: "Salle 101",
-        status: "connected",
-    };
+    const [sensors, setSensors] = useState<Sensor[]>([]); // Tous les capteurs récupérés
+    const [filteredSensors, setFilteredSensors] = useState<Sensor[]>([]); // Capteurs filtrés
 
-    const sensorData2 = {
-        _id: "677fd8fdf97f0260ad45ed15",
-        topic: "humidity",
-        sensor_id: "09b40150279a",
-        type: "periodic",
-        value: 44.06,
-        unit: "% HR",
-        timestamp: 1736431869,
-        qos: 0,
-    };
+    const [searchTerm, setSearchTerm] = useState<string>(""); // Barre de recherche
+    const [selectedType, setSelectedType] = useState<string>(""); // Filtre par type
+    const [selectedRoom, setSelectedRoom] = useState<string>(""); // Filtre par pièce
 
+    const [rooms, setRooms] = useState<string[]>([]); // Liste des pièces disponibles
 
-    const [sensorDaata, setSensorDaata ] = useState([]);
-
+    // Récupérer les capteurs avec leurs dernières valeurs
     const fetchSensors = () => {
         axios.get('http://localhost:3000/api/sensors/all')
-            .then(res => {
-                if (res.status) {
-                    setSensorDaata(res.data);
-                    console.log(res);
+            .then(sensorsResponse => {
+                if (sensorsResponse.status === 200) {
+                    axios.get('http://localhost:3000/api/sensors/all/latest')
+                        .then(valuesResponse => {
+                            const sensors = sensorsResponse.data.map((sensor: Sensor) => {
+                                const value = valuesResponse.data.find((value: any) => value.sensor_id === sensor.sensor_id);
+                                return {
+                                    ...sensor,
+                                    last_value: value ? value.value : null,
+                                    unit: value ? value.unit : null
+                                };
+                            });
+                            setSensors(sensors);
+                            setFilteredSensors(sensors); // Initialiser les capteurs filtrés
+                            extractRooms(sensors); // Extraire les pièces
+                        });
                 } else {
-                    console.error(res);
+                    console.error("Erreur lors de l'appel : ", sensorsResponse);
                 }
             })
             .catch(error => {
-                console.error('Error fetching sensors:', error);
+                console.error("Erreur lors de l'appel : ", error);
             });
     };
 
-    fetchSensors();
-    
+    // Extraire les pièces uniques
+    const extractRooms = (sensors: Sensor[]) => {
+        const uniqueRooms = Array.from(new Set(sensors.map(sensor => sensor.room).filter(Boolean)));
+        setRooms(uniqueRooms);
+    };
 
-    // Exemple de tableau pour plusieurs capteurs
-    const sensors = Array(10).fill({
-        ...sensorData,
-        value: sensorData2.value,
-        unit: sensorData2.unit,
-    });
+    // Appliquer les filtres sur les capteurs
+    const applyFilters = () => {
+        let filtered = sensors;
+
+        // Filtrer par terme de recherche (nom du capteur)
+        if (searchTerm.trim()) {
+            filtered = filtered.filter(sensor =>
+                sensor.name.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+
+        // Filtrer par type
+        if (selectedType) {
+            filtered = filtered.filter(sensor => sensor.status === selectedType);
+        }
+
+        // Filtrer par pièce
+        if (selectedRoom) {
+            filtered = filtered.filter(sensor => sensor.room === selectedRoom);
+        }
+
+        setFilteredSensors(filtered);
+    };
+
+    // Connexion WebSocket
+    useEffect(() => {
+        const ws = new WebSocket('ws://localhost:3001');
+
+        ws.onopen = () => {
+            console.log('WebSocket connected');
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const parsedData = JSON.parse(event.data); // Parse the outer structure
+
+                if (parsedData.message) {
+                    const updatedSensor = JSON.parse(parsedData.message); // Parse the nested message field
+
+                    if (parsedData.topic === 'ping') {
+                        setSensors((prevSensors) =>
+                            prevSensors.map((sensor) =>
+                                sensor.sensor_id === updatedSensor.sensor_id
+                                    ? {
+                                        ...sensor,
+                                        status: updatedSensor.status
+                                    }
+                                    : sensor
+                            )
+                        );
+                        return;
+                    } else {
+                        setSensors((prevSensors) =>
+                            prevSensors.map((sensor) =>
+                                sensor.sensor_id === updatedSensor.sensor_id
+                                    ? {
+                                        ...sensor,
+                                        last_value: updatedSensor.value,
+                                        unit: updatedSensor.unit
+                                    }
+                                    : sensor
+                            )
+                        );
+                    }
+                }
+            } catch (error) {
+                console.error('Erreur lors du traitement des données WebSocket :', error);
+            }
+        };
+
+        ws.onclose = () => {
+            console.log('WebSocket disconnected');
+        };
+
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+
+        // Fermer la connexion WebSocket lors du démontage
+        return () => {
+            ws.close();
+        };
+    }, []);
+
+    // Mettre à jour les capteurs filtrés à chaque modification des filtres
+    useEffect(() => {
+        applyFilters();
+    }, [searchTerm, selectedType, selectedRoom, sensors]);
+
+    // Charger les capteurs au montage du composant
+    useEffect(() => {
+        fetchSensors();
+    }, []);
 
     return (
-        <div className="relative w-full min-h-screen bg-gray-900 flex flex-col">
-            <header className="w-full bg-gray-800 shadow-md px-6 py-4 flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-gray-100">DomoDomo</h1>
-                <nav>
-                    <ul className="flex space-x-4">
-                        <li>
-                            <a href="#" className="text-gray-100 hover:text-gray-800">About</a>
-                        </li>
-                    </ul>
-                </nav>
-            </header>
-
+        <div>
             {/* Barre de recherche et filtre */}
             <div className="w-full px-6 py-4">
                 <div className="flex items-center space-x-4">
@@ -73,45 +151,54 @@ const Home: React.FC = () => {
                         type="text"
                         placeholder="Rechercher..."
                         className="w-1/3 px-4 py-3 rounded-md bg-gray-700 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)} // Met à jour le terme de recherche
                     />
+
                     {/* Menu déroulant pour filtrer Types */}
                     <h1 className="text-gray-100">Types : </h1>
                     <select
                         className="w-1/4 px-6 py-3 rounded-md bg-gray-700 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                        value={selectedType}
+                        onChange={(e) => setSelectedType(e.target.value)} // Met à jour le filtre de type
                     >
                         <option value="">Tous</option>
-                        <option value="option1">Option 1</option>
-                        <option value="option2">Option 2</option>
-                        <option value="option3">Option 3</option>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                        <option value="Error">Error</option>
                     </select>
 
-                    {/* Menu déroulant pour filtrer Pièce */}
+                    {/* Menu déroulant pour filtrer Pièces */}
                     <h1 className="text-gray-100">Pièces : </h1>
                     <select
                         className="w-1/4 px-6 py-3 rounded-md bg-gray-700 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                        value={selectedRoom}
+                        onChange={(e) => setSelectedRoom(e.target.value)} // Met à jour le filtre de pièce
                     >
                         <option value="">Tous</option>
-                        <option value="option1">Option 1</option>
-                        <option value="option2">Option 2</option>
-                        <option value="option3">Option 3</option>
+                        {rooms.map((room, index) => (
+                            <option key={index} value={room}>
+                                {room}
+                            </option>
+                        ))}
                     </select>
                 </div>
             </div>
 
             <main className="flex flex-wrap gap-8 justify-center mt-5">
                 {/* Contenu principal */}
-                {sensors.map((sensor, index) => (
+                {filteredSensors.map((sensor, index) => (
                     <PeriodSensors
                         key={index}
+                        _id={sensor._id}
+                        sensor_id={sensor.sensor_id}
                         name={sensor.name}
                         room={sensor.room}
                         status={sensor.status}
-                        value={sensor.value}
+                        last_value={sensor.last_value}
                         unit={sensor.unit}
                     />
                 ))}
-
-                <EventSensors />
             </main>
         </div>
     );
