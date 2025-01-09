@@ -13,7 +13,7 @@ import paho.mqtt.client as mqtt
 # --- Variables globales a modifier pour créer un nouveau capteur ---
 TOPIC = os.getenv("TOPIC", "humidity")  # Topic à modifier par capteur
 TYPE = "periodic"  # type du capteur, "periodic" or "event"
-UNIT = "% HR"  # Unité du capteur
+UNIT = "% HR"  # Unité du capteur, % d'Humidité Relative
 DELAY_PERIODIC = 1  # délai en secondes, si capteur de type périodique, par défaut 5 minutes
 DELAY_EVENT_MIN = 3 * 60  # délai minimum en secondes, si capteur de type événement, par défaut 3 minutes
 DELAY_EVENT_MAX = 15 * 60  # délai maximum en secondes, si capteur de type événement, par défaut 15 minutes
@@ -221,7 +221,7 @@ def main():
                             time.sleep(DELAY_PERIODIC)
                         elif TYPE == "event":
                             # Attendre X secondes avant le prochain envoi
-                            time.sleep(round(random.uniform(DELAY_EVENT_MIN, DELAY_EVENT_MAX), 2))
+                            time.sleep(round(random.uniform(DELAY_EVENT_MIN, DELAY_EVENT_MAX), 0))
                 except KeyboardInterrupt:
                     print("\n[INFO] Arrêt du capteur.")
                 finally:

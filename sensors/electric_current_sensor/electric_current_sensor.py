@@ -11,7 +11,7 @@ import netifaces as ni
 import paho.mqtt.client as mqtt
 
 # --- Variables globales a modifier pour créer un nouveau capteur ---
-TOPIC = os.getenv("TOPIC", "electric-current")  # Topic à modifier par capteur
+TOPIC = os.getenv("TOPIC", "electric_current")  # Topic à modifier par capteur
 TYPE = "periodic"  # type du capteur, "periodic" or "event"
 UNIT = "W"  # Unité du capteur
 DELAY_PERIODIC = 1  # délai en secondes, si capteur de type périodique, par défaut 5 minutes
@@ -238,7 +238,7 @@ def main():
                             time.sleep(DELAY_PERIODIC)
                         elif TYPE == "event":
                             # Attendre X secondes avant le prochain envoi
-                            time.sleep(round(random.uniform(DELAY_EVENT_MIN, DELAY_EVENT_MAX), 2))
+                            time.sleep(round(random.uniform(DELAY_EVENT_MIN, DELAY_EVENT_MAX), 0))
                 except KeyboardInterrupt:
                     print("\n[INFO] Arrêt du capteur.")
                 finally:

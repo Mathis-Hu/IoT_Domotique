@@ -203,7 +203,7 @@ def main():
                             time.sleep(DELAY_PERIODIC)
                         elif TYPE == "event":
                             # Attendre X secondes avant le prochain envoi
-                            time.sleep(round(random.uniform(DELAY_EVENT_MIN, DELAY_EVENT_MAX), 2))
+                            time.sleep(round(random.uniform(DELAY_EVENT_MIN, DELAY_EVENT_MAX), 0))
                 except KeyboardInterrupt:
                     print("\n[INFO] Arrêt du capteur.")
                 finally:
