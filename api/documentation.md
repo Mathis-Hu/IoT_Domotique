@@ -1,7 +1,3 @@
-Voici la documentation des différents endpoints en **Markdown** :
-
----
-
 # API Documentation
 
 ## Base URL
@@ -89,15 +85,13 @@ http://localhost:3000/api/sensors
 - **Réponse (Succès)**:
     ```json
     {
-        "_id": "678fd663f97f0260ad45e983",
-        "topic": "temperature",
-        "payload": {
-            "sensor_id": "c5f694a1a042",
-            "type": "periodic",
-            "value": 22.5,
-            "unit": "°C",
-            "timestamp": 1736368072
-        },
+        "_id": "677fda98f97f0260ad45f076",
+        "topic": "humidity",
+        "sensor_id": "09b40150279a",
+        "type": "periodic",
+        "value": 48.88,
+        "unit": "% HR",
+        "timestamp": 1736432280,
         "qos": 0
     }
     ```
@@ -123,25 +117,21 @@ http://localhost:3000/api/sensors
         {
             "_id": "678fd663f97f0260ad45e983",
             "topic": "temperature",
-            "payload": {
-                "sensor_id": "c5f694a1a042",
-                "type": "periodic",
-                "value": 22.5,
-                "unit": "°C",
-                "timestamp": 1736368072
-            },
+            "sensor_id": "c5f694a1a042",
+            "type": "periodic",
+            "value": 22.5,
+            "unit": "°C",
+            "timestamp": 1736368072,
             "qos": 0
         },
         {
             "_id": "678fd663f97f0260ad45e984",
             "topic": "temperature",
-            "payload": {
-                "sensor_id": "c5f694a1a042",
-                "type": "periodic",
-                "value": 23.1,
-                "unit": "°C",
-                "timestamp": 1736369072
-            },
+            "sensor_id": "c5f694a1a042",
+            "type": "periodic",
+            "value": 23.1,
+            "unit": "°C",
+            "timestamp": 1736369072,
             "qos": 0
         }
     ]
