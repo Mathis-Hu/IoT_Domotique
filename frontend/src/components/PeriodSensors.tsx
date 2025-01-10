@@ -28,10 +28,11 @@ const PeriodSensors: React.FC<SensorProps> = ({
             <h1 className="text-xl font-semibold mb-4 text-gray-100">{name}</h1>
             <div className="flex flex-col items-center justify-center mb-4">
                 <span className="text-5xl font-bold text-gray-100">
-                  {status === "connected" ? last_value : "N/A"}
+                    {status === "connected" ? (last_value || "N/A") : "N/A"}
                     <span className="text-2xl text-gray-100"> {status === "connected" ? unit : ""}</span>
                 </span>
             </div>
+
             <div className="mt-4">
                 <p className="text-gray-100 text-xl mb-1">{room}</p>
             </div>

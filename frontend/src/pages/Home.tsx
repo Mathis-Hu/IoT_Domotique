@@ -120,10 +120,9 @@ const Home: React.FC = () => {
                             )
                         );
 
-                        if (updatedSensor.type === 'event') {
-
+                        if (updatedSensor.type === 'event' && updatedSensor.value) {
+                            console.log('Event received:', updatedSensor.value);
                             const foundSensor = sensors.find(sensor => sensor.sensor_id === updatedSensor.sensor_id);
-
                             const message = foundSensor?.name + ": " + updatedSensor.value
                             toast.warning(message, {
                                 position: "top-right",
