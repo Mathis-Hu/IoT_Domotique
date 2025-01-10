@@ -19,12 +19,16 @@ DELAY_EVENT_MIN = 8  # délai minimum en secondes, si capteur de type événemen
 DELAY_EVENT_MAX = 30  # délai maximum en secondes, si capteur de type événement, par défaut 15 minutes
 previous_value = None  # valeur précédente, surtout utile pour les capteurs de type événement
 
+
 # Génération de la valeur simulée
 def generate_value():
     global previous_value, DELAY_EVENT_MIN, DELAY_EVENT_MAX
-    DELAY_EVENT_MIN_temp = DELAY_EVENT_MIN
-    DELAY_EVENT_MAX_temp = DELAY_EVENT_MAX
-    if previous_value == None:
+    DELAY_EVENT_MIN_temp = 0
+    DELAY_EVENT_MAX_temp = 0
+
+    if previous_value is None:
+        DELAY_EVENT_MIN_temp = DELAY_EVENT_MIN
+        DELAY_EVENT_MAX_temp = DELAY_EVENT_MAX
         value = ""
         previous_value = value
 
@@ -32,6 +36,7 @@ def generate_value():
         value = ""
         DELAY_EVENT_MIN = DELAY_EVENT_MIN_temp
         DELAY_EVENT_MAX = DELAY_EVENT_MAX_temp
+
     else:
         value = "Mouvement détecté !"
         DELAY_EVENT_MIN = 1
@@ -39,8 +44,6 @@ def generate_value():
 
     previous_value = value
     return value
-
-    
 
 
 # --- NE PAS MODIFIER A PARTIR D'ICI ---
@@ -101,6 +104,7 @@ def test_mosquitto_server(ip, port=PORT):
     except:
         return None
 
+
 # Fonction appelée lorsque le capteur se connecte au broker
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
@@ -115,6 +119,7 @@ def on_connect(client, userdata, flags, rc):
         }), qos=1)
     else:
         print(f"[ERREUR] Connexion échouée avec code {rc}.")
+
 
 # Fonction appelée lorsque le capteur se déconnecte du broker
 def on_disconnect(client, userdata, rc):

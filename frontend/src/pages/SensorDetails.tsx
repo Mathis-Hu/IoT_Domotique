@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Sensor } from "../models/sensor.ts";
+import React, {useEffect, useState} from "react";
+import {useNavigate, useParams} from "react-router-dom";
+import {Sensor} from "../models/sensor.ts";
 import axios from "axios";
-import { Line } from "react-chartjs-2";
+import {Line} from "react-chartjs-2";
 import {
     CategoryScale,
     Chart as ChartJS,
@@ -17,7 +17,7 @@ import SensorEditForm from "../components/SensorEditForm.tsx";
 import SelectStartEndDate from "../components/SelectStartEndDate.tsx";
 import SensorHistoryTable from "../components/SensorHistoryTable.tsx";
 import SensorStatus from "../components/SensorStatus.tsx";
-import { ToastContainer, toast, Bounce } from 'react-toastify';
+import {Bounce, toast, ToastContainer} from 'react-toastify';
 
 ChartJS.register(LineElement, PointElement, LinearScale, Title, Tooltip, Legend, CategoryScale);
 
@@ -130,6 +130,10 @@ const SensorDetails: React.FC = () => {
         fetchSensor(); // Récupérer les détails du capteur
         fetchHistory(); // Récupérer l'historique du capteur
     }, []);
+
+    useEffect(() => {
+        setIsLive(sensor?.status === "connected");
+    }, [sensor]);
 
     useEffect(() => {
         if (startDate && endDate) {

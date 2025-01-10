@@ -1,4 +1,5 @@
 import React from "react";
+import {useNavigate} from "react-router-dom";
 
 interface EventsHistoryTableProps {
     filteredHistory: {
@@ -11,6 +12,8 @@ interface EventsHistoryTableProps {
 }
 
 const EventsHistoryTable: React.FC<EventsHistoryTableProps> = ({filteredHistory}) => {
+    const navigate = useNavigate(); // Hook pour naviguer entre les pages
+
     return (
         <div className="flex-1 bg-gray-800  p-4 rounded-lg overflow-y-auto max-h-96">
             <h2 className="text-xl font-bold text-white mb-4">Historique des alertes</h2>
@@ -27,8 +30,10 @@ const EventsHistoryTable: React.FC<EventsHistoryTableProps> = ({filteredHistory}
                 {filteredHistory
                     .slice()
                     .sort((a, b) => b.timestamp - a.timestamp) // Tri décroissant par timestamp
+                    .filter(entry => entry.value !== "")
                     .map((entry, index) => (
-                        <tr key={index}>
+                        <tr className="cursor-pointer hover:bg-gray-950" key={index}
+                            onClick={() => navigate("/sensors/" + entry.sensor_id)}>
                             <td className="p-2 border-b border-gray-700">
                                 {new Date(entry.timestamp * 1000).toLocaleString()}
                             </td>
