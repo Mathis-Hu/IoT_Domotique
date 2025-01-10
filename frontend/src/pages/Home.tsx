@@ -184,7 +184,7 @@ const Home: React.FC = () => {
 
                     {/* Filter by Room */}
                     <div className="flex-grow">
-                        <label htmlFor="roomFilter" className="block text-sm mb-2 text-gray-100">Pièces :</label>
+                        <label htmlFor="roomFilter" className="block text-sm mb-2 text-gray-100">Emplacement :</label>
                         <select
                             id="roomFilter"
                             className="w-full px-4 py-3 rounded-md bg-gray-700 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500"
