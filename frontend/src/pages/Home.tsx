@@ -127,8 +127,8 @@ const Home: React.FC = () => {
 
                             const foundSensor = sensors.find(sensor => sensor.sensor_id === updatedSensor.sensor_id);
                         
-                            console.log(updatedSensor)
-                            toast.warning('Mouvement détecté !  ' + foundSensor?.name , {
+                            const message = foundSensor?.name  + ": " + updatedSensor.value 
+                            toast.warning(message  , {
                                 position: "top-right",
                                 hideProgressBar: true,
                                 autoClose: false, // Le toast reste ouvert
