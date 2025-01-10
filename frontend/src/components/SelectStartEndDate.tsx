@@ -19,8 +19,8 @@ const SelectStartEndDate: React.FC<SelectStartEndDateProps> = ({
 }) => {
 
     return (
-        <div className="flex space-x-4 mt-6 ">
-            <div>
+        <div className="flex space-x-4 mt-6 flex-wrap gap-2">
+            <div className="ml-4">
                 <label className="text-white">Date de début :</label>
                 <input
                     type="datetime-local"
