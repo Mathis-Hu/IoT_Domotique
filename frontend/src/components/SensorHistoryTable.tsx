@@ -10,7 +10,7 @@ interface SensorHistoryTableProps {
 
 const SensorHistoryTable: React.FC<SensorHistoryTableProps> = ({filteredHistory}) => {
     return (
-        <div className="flex-1 bg-gray-800 p-4 rounded-lg overflow-y-auto max-h-96">
+        <div className="flex-1 bg-gray-800  p-4 rounded-lg overflow-y-auto max-h-96">
             <h2 className="text-xl font-bold text-white mb-4">Historique des Valeurs</h2>
             <table className="w-full text-left text-gray-100">
                 <thead>

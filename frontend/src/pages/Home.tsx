@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import PeriodSensors from '../components/PeriodSensors';
 import axios from 'axios';
 import { Sensor } from "../models/sensor.ts";
+import { ToastContainer, toast, Bounce } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { useNavigate } from 'react-router-dom';
 
 const Home: React.FC = () => {
     const [sensors, setSensors] = useState<Sensor[]>([]); // Tous les capteurs récupérés
@@ -10,6 +13,8 @@ const Home: React.FC = () => {
     const [selectedType, setSelectedType] = useState<string>(""); // Filtre par type
     const [selectedRoom, setSelectedRoom] = useState<string>(""); // Filtre par pièce
     const [rooms, setRooms] = useState<string[]>([]); // Liste des pièces disponibles 
+
+    const navigate = useNavigate();
 
     // Récupérer les capteurs avec leurs dernières valeurs
     const fetchSensors = () => {
@@ -117,6 +122,25 @@ const Home: React.FC = () => {
                                     : sensor
                             )
                         );
+
+                        if (updatedSensor.type === 'event') {
+
+                            const foundSensor = sensors.find(sensor => sensor.sensor_id === updatedSensor.sensor_id);
+                        
+                            console.log(updatedSensor)
+                            toast.warning('Mouvement détecté !  ' + foundSensor?.name , {
+                                position: "top-right",
+                                hideProgressBar: true,
+                                autoClose: false, // Le toast reste ouvert
+                                closeOnClick: true, // Se ferme quand on clique dessus
+                                pauseOnHover: true,
+                                draggable: true,
+                                theme: "colored",
+                                transition: Bounce,
+                                toastId: updatedSensor.sensor_id, // Identifiant unique basé sur le capteur
+                                onClick: () => navigate(`/sensors/${updatedSensor.sensor_id}`) 
+                            });
+                        }
                     }
                 }
             } catch (error) {
@@ -132,7 +156,7 @@ const Home: React.FC = () => {
         return () => {
             ws.close();
         };
-    }, []);
+    }, [sensors]);
 
 
     // Mettre à jour les capteurs filtrés à chaque modification des filtres
@@ -211,9 +235,26 @@ const Home: React.FC = () => {
                         last_value={sensor.last_value}
                         unit={sensor.unit}
                         type={sensor.type}
+                        
                     />
                 ))}
             </main>
+
+            <div>
+                <ToastContainer
+                    position="top-right"
+                    autoClose={false}
+                    hideProgressBar={true}
+                    newestOnTop={false}
+                    closeOnClick={false}
+                    rtl={false}
+                    pauseOnFocusLoss
+                    draggable
+                    pauseOnHover
+                    theme="colored"
+                    transition={Bounce}
+                />
+            </div>
 
         </div>
     );

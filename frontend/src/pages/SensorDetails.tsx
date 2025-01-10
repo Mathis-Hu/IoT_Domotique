@@ -17,6 +17,7 @@ import SensorEditForm from "../components/SensorEditForm.tsx";
 import SelectStartEndDate from "../components/SelectStartEndDate.tsx";
 import SensorHistoryTable from "../components/SensorHistoryTable.tsx";
 import SensorStatus from "../components/SensorStatus.tsx";
+import { ToastContainer, toast, Bounce } from 'react-toastify';
 
 ChartJS.register(LineElement, PointElement, LinearScale, Title, Tooltip, Legend, CategoryScale);
 
@@ -88,209 +89,250 @@ const SensorDetails: React.FC = () => {
                     if (res.status === 200) {
                         fetchSensor(); // Récupérer les détails mis à jour
                         setIsEditable(false); // Désactiver la modification
-                    } else {
-                        console.error("Erreur lors de l'appel PUT : ", res);
-                    }
-                })
-                .catch(error => {
-                    console.error("Erreur lors de l'appel PUT : ", error);
-                });
-        }
-    };
 
-    useEffect(() => {
-        fetchSensor(); // Récupérer les détails du capteur
-        fetchHistory(); // Récupérer l'historique du capteur
-    }, []);
+                        toast.success('modified sensor', {
+                            position: "top-right",
+                            hideProgressBar: false,
+                            //autoClose: false, // Le toast reste ouvert
+                            closeOnClick: true, // Se ferme quand on clique dessus
+                            pauseOnHover: true,
+                            draggable: true,
+                            theme: "colored",
+                            transition: Bounce,
+                            //toastId: updatedSensor.sensor_id // Identifiant unique basé sur le capteur
+                        });
+        } else {
+            console.error("Erreur lors de l'appel PUT : ", res);
 
-    useEffect(() => {
-        if (startDate && endDate) {
-            const startTimestamp = new Date(startDate).getTime(); // En millisecondes
-            const endTimestamp = new Date(endDate).getTime(); // En millisecondes
-
-            const filtered = history.filter(
-                (entry) => entry.timestamp * 1000 >= startTimestamp && entry.timestamp * 1000 <= endTimestamp
-            );
-
-            setFilteredHistory(filtered);
-        }
-    }, [startDate, endDate, history]);
-
-    // Gérer les changements dans les champs du formulaire
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (updatedSensor) {
-            setUpdatedSensor({
-                ...updatedSensor,
-                [e.target.name]: e.target.value,
+            toast.error('error when modifying sensor', {
+                position: "top-right",
+                hideProgressBar: false,
+                //autoClose: false, // Le toast reste ouvert
+                closeOnClick: true, // Se ferme quand on clique dessus
+                pauseOnHover: true,
+                draggable: true,
+                theme: "colored",
+                transition: Bounce,
+                //toastId: updatedSensor.sensor_id // Identifiant unique basé sur le capteur
             });
         }
+    })
+                .catch (error => {
+    console.error("Erreur lors de l'appel PUT : ", error);
+});
+        }
     };
 
-    // Fonction pour appliquer une moyenne mobile
-    const movingAverage = (data: number[], windowSize: number) => {
-        return data.map((_, index, arr) => {
-            const start = Math.max(0, index - windowSize + 1);
-            const subset = arr.slice(start, index + 1);
-            const sum = subset.reduce((a, b) => a + b, 0);
-            return sum / subset.length;
+useEffect(() => {
+    fetchSensor(); // Récupérer les détails du capteur
+    fetchHistory(); // Récupérer l'historique du capteur
+}, []);
+
+useEffect(() => {
+    if (startDate && endDate) {
+        const startTimestamp = new Date(startDate).getTime(); // En millisecondes
+        const endTimestamp = new Date(endDate).getTime(); // En millisecondes
+
+        const filtered = history.filter(
+            (entry) => entry.timestamp * 1000 >= startTimestamp && entry.timestamp * 1000 <= endTimestamp
+        );
+
+        setFilteredHistory(filtered);
+    }
+}, [startDate, endDate, history]);
+
+// Gérer les changements dans les champs du formulaire
+const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (updatedSensor) {
+        setUpdatedSensor({
+            ...updatedSensor,
+            [e.target.name]: e.target.value,
         });
-    };
 
-    // Utilisation dans le graphique
-    const smoothedValues = movingAverage(filteredHistory.map(entry => entry.value), 5); // Moyenne mobile sur 5 points
-    const chartData = {
-        labels: filteredHistory.map(entry =>
-            new Date(entry.timestamp * 1000).toLocaleString()
-        ),
-        datasets: [
-            {
-                label: `Valeur (${filteredHistory[0]?.unit || ""})`,
-                data: smoothedValues,
-                borderColor: "rgba(75, 192, 192, 1)",
-                backgroundColor: "rgba(75, 192, 192, 0.2)",
-                tension: 0.4,
-            },
-        ],
-    };
+    }
 
-    const chartOptions = {
-        responsive: true,
-        maintainAspectRatio: false, // Permet d'ajuster la taille
-        plugins: {
-            legend: {
-                position: "top" as const,
-            },
+
+};
+
+// Fonction pour appliquer une moyenne mobile
+const movingAverage = (data: number[], windowSize: number) => {
+    return data.map((_, index, arr) => {
+        const start = Math.max(0, index - windowSize + 1);
+        const subset = arr.slice(start, index + 1);
+        const sum = subset.reduce((a, b) => a + b, 0);
+        return sum / subset.length;
+    });
+};
+
+// Utilisation dans le graphique
+const smoothedValues = movingAverage(filteredHistory.map(entry => entry.value), 5); // Moyenne mobile sur 5 points
+const chartData = {
+    labels: filteredHistory.map(entry =>
+        new Date(entry.timestamp * 1000).toLocaleString()
+    ),
+    datasets: [
+        {
+            label: `Valeur (${filteredHistory[0]?.unit || ""})`,
+            data: smoothedValues,
+            borderColor: "rgba(75, 192, 192, 1)",
+            backgroundColor: "rgba(75, 192, 192, 0.2)",
+            tension: 0.4,
         },
+    ],
+};
+
+const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false, // Permet d'ajuster la taille
+    plugins: {
+        legend: {
+            position: "top" as const,
+        },
+    },
+};
+
+// Connexion WebSocket
+useEffect(() => {
+    const ws = new WebSocket('ws://localhost:3001');
+
+    ws.onopen = () => {
+        console.log('WebSocket connected');
     };
 
-    // Connexion WebSocket
-    useEffect(() => {
-        const ws = new WebSocket('ws://localhost:3001');
+    ws.onmessage = (event) => {
+        try {
+            const parsedData = JSON.parse(event.data); // Parse the outer structure
 
-        ws.onopen = () => {
-            console.log('WebSocket connected');
-        };
+            if (parsedData.message) {
+                const updatedSensor = JSON.parse(parsedData.message); // Parse the nested message field
 
-        ws.onmessage = (event) => {
-            try {
-                const parsedData = JSON.parse(event.data); // Parse the outer structure
+                if (updatedSensor.sensor_id === id) {
+                    if (parsedData.topic === 'ping') {
+                        // Met à jour le status du capteur
+                        // {topic: 'ping', message: '{"sensor_id": "6d162c67e4e2", "status": "disconnec…re", "type": "periodic", "timestamp": 1736452422}'}
+                        setSensor((prevSensor) => {
+                            if (prevSensor) {
+                                return {
+                                    ...prevSensor,
+                                    status: updatedSensor.status,
+                                };
+                            }
+                            return prevSensor;
+                        });
+                        return;
+                    } else {
+                        // Ajout de la nouvelle valeur à l'historique
+                        const newHistoryEntry = {
+                            timestamp: updatedSensor.timestamp,
+                            value: updatedSensor.value,
+                            unit: updatedSensor.unit,
+                        };
 
-                if (parsedData.message) {
-                    const updatedSensor = JSON.parse(parsedData.message); // Parse the nested message field
+                        setHistory((prevHistory) => [...prevHistory, newHistoryEntry]);
+                        setFilteredHistory((prevFilteredHistory) => [...prevFilteredHistory, newHistoryEntry]);
 
-                    if (updatedSensor.sensor_id === id) {
-                        if (parsedData.topic === 'ping') {
-                            // Met à jour le status du capteur
-                            // {topic: 'ping', message: '{"sensor_id": "6d162c67e4e2", "status": "disconnec…re", "type": "periodic", "timestamp": 1736452422}'}
-                            setSensor((prevSensor) => {
-                                if (prevSensor) {
-                                    return {
-                                        ...prevSensor,
-                                        status: updatedSensor.status,
-                                    };
-                                }
-                                return prevSensor;
-                            });
-                            return;
-                        } else {
-                            // Ajout de la nouvelle valeur à l'historique
-                            const newHistoryEntry = {
-                                timestamp: updatedSensor.timestamp,
-                                value: updatedSensor.value,
-                                unit: updatedSensor.unit,
-                            };
+                        // Mise à jour du filtre de date de fin
+                        const newTimestamp = updatedSensor.timestamp * 1000;
+                        const newDate = new Date(newTimestamp);
+                        newDate.setHours(newDate.getHours() + 1);
+                        setEndDate(newDate.toISOString().slice(0, 19));
 
-                            setHistory((prevHistory) => [...prevHistory, newHistoryEntry]);
-                            setFilteredHistory((prevFilteredHistory) => [...prevFilteredHistory, newHistoryEntry]);
-
-                            // Mise à jour du filtre de date de fin
-                            const newTimestamp = updatedSensor.timestamp * 1000;
-                            const newDate = new Date(newTimestamp);
-                            newDate.setHours(newDate.getHours() + 1);
-                            setEndDate(newDate.toISOString().slice(0, 19));
-
-                            return;
-                        }
+                        return;
                     }
                 }
-            } catch (error) {
-                console.error('Erreur lors du traitement des données WebSocket :', error);
             }
-        };
+        } catch (error) {
+            console.error('Erreur lors du traitement des données WebSocket :', error);
+        }
+    };
 
-        ws.onclose = () => {
-            console.log('WebSocket disconnected');
-        };
+    ws.onclose = () => {
+        console.log('WebSocket disconnected');
+    };
 
-        // Fermer la connexion WebSocket lors du démontage
-        return () => {
-            ws.close();
-        };
-    }, [id]);
+    // Fermer la connexion WebSocket lors du démontage
+    return () => {
+        ws.close();
+    };
+}, [id]);
 
 
-    return (
-        <div className="p-6">
-            {/* Flèche de retour */}
-            <button
-                onClick={() => navigate("/")} // Redirige vers la page d'accueil
-                className="flex items-center text-gray-100 bg-gray-800 p-2 rounded-md hover:bg-gray-700"
+return (
+    <div className="p-6">
+        {/* Flèche de retour */}
+        <button
+            onClick={() => navigate("/")} // Redirige vers la page d'accueil
+            className="flex items-center text-gray-100 bg-gray-800 p-2 rounded-md hover:bg-gray-700"
+        >
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+                className="w-5 h-5 mr-2"
             >
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={2}
-                    stroke="currentColor"
-                    className="w-5 h-5 mr-2"
-                >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
-                Retour
-            </button>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Retour
+        </button>
 
-            <h1 className="text-2xl font-bold text-white mt-7">Détails du Capteur
-                : {sensor?.name || "Chargement..."}</h1>
+        <h1 className="text-2xl font-bold text-white mt-7">Détails du Capteur
+            : {sensor?.name || "Chargement..."}</h1>
 
-            <SensorStatus status={sensor?.status || "offline"}
-                className="left-4 flex items-center space-x-2" />
+        <SensorStatus status={sensor?.status || "offline"}
+            className="left-4 flex items-center space-x-2" />
 
-            {/* Formulaire de modification */}
-            <SensorEditForm
-                updatedSensor={updatedSensor}
-                isEditable={isEditable}
-                setIsEditable={setIsEditable}
-                handleChange={handleChange}
-                saveSensor={saveSensor}
-            />
+        {/* Formulaire de modification */}
+        <SensorEditForm
+            updatedSensor={updatedSensor}
+            isEditable={isEditable}
+            setIsEditable={setIsEditable}
+            handleChange={handleChange}
+            saveSensor={saveSensor}
+        />
 
-            {/* Tableau + Graphique en ligne */}
-            <SelectStartEndDate
-                startDate={startDate}
-                endDate={endDate}
-                setStartDate={setStartDate}
-                setEndDate={setEndDate}
-            />
+        {/* Tableau + Graphique en ligne */}
+        <SelectStartEndDate
+            startDate={startDate}
+            endDate={endDate}
+            setStartDate={setStartDate}
+            setEndDate={setEndDate}
+        />
 
 
-            <div className="flex lg:flex-nowrap flex-wrap mt-8 gap-8">
+        <div className="flex lg:flex-nowrap flex-wrap  mt-8 gap-8">
+            <div className="w-full flex-grow lg:w-1/2">
+                <SensorHistoryTable filteredHistory={filteredHistory} />
+            </div>
+
+            {sensor?.type === "periodic" && (
                 <div className="w-full lg:w-1/2">
-                    <SensorHistoryTable filteredHistory={filteredHistory} />
-                </div>
-
-                {sensor?.type === "periodic" && (
-                    <div className="w-full lg:w-1/2">
-                        <div className="bg-gray-800 p-4 rounded-lg">
-                            <h2 className="text-xl font-bold text-white mb-4">Graphique</h2>
-                            <div style={{ height: "300px", width: "100%" }}>
-                                <Line data={chartData} options={chartOptions} />
-                            </div>
+                    <div className="bg-gray-800 p-4 rounded-lg">
+                        <h2 className="text-xl font-bold text-white mb-4">Graphique</h2>
+                        <div style={{ height: "300px", width: "100%" }}>
+                            <Line data={chartData} options={chartOptions} />
                         </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
         </div>
-    );
+
+        <ToastContainer
+            position="top-right"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick={false}
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="colored"
+            transition={Bounce}
+        />
+    </div>
+);
 };
 
 export default SensorDetails;
