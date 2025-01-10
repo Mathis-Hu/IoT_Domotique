@@ -41,7 +41,7 @@ const SelectStartEndDate: React.FC<SelectStartEndDateProps> = ({
             <div>
                 <label className="text-white">En direct :</label>
                 <button
-                    onClick={(e) => setIsLive(!isLive)}
+                    onClick={() => setIsLive(!isLive)}
                     className={`ml-2 p-2 rounded-md ${
                         isLive ? "bg-red-900" : "bg-green-900"
                     } text-white`}
