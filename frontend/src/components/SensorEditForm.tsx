@@ -37,7 +37,7 @@ const SensorEditForm: React.FC<SensorEditFormProps> = ({
             />
 
             <label htmlFor="room" className="block text-sm font-medium text-gray-100 mt-4">
-                Pièce
+                Emplacement du capteur
             </label>
             <input
                 type="text"
