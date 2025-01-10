@@ -111,7 +111,8 @@ MongoClient.connect(mongoUri, {useNewUrlParser: true, useUnifiedTopology: true})
 // Récupérer la liste des capteurs connus
 app.get('/api/sensors/known', async (req, res) => {
     try {
-        const sensors = await db.collection('known_devices').find().toArray();
+        // Trie par status (connected,   disconnected,  disconnected_unknown)
+        const sensors = await db.collection('known_devices').find().sort({status: 1}).toArray();
         res.json(sensors);
     } catch (err) {
         res.status(500).json({error: 'Erreur lors de la récupération des capteurs connus'});
@@ -121,7 +122,7 @@ app.get('/api/sensors/known', async (req, res) => {
 // Récupérer la liste des capteurs inconnus
 app.get('/api/sensors/unknown', async (req, res) => {
     try {
-        const sensors = await db.collection('unknown_devices').find().toArray();
+        const sensors = await db.collection('unknown_devices').find().sort({status: 1}).toArray();
         res.json(sensors);
     } catch (err) {
         res.status(500).json({error: 'Erreur lors de la récupération des capteurs inconnus'});
@@ -131,8 +132,8 @@ app.get('/api/sensors/unknown', async (req, res) => {
 // Récupérer la liste de tous les capteurs
 app.get('/api/sensors/all', async (req, res) => {
     try {
-        const knownSensors = await db.collection('known_devices').find().toArray();
-        const unknownSensors = await db.collection('unknown_devices').find().toArray();
+        const knownSensors = await db.collection('known_devices').find().sort({status: 1}).toArray();
+        const unknownSensors = await db.collection('unknown_devices').find().sort({status: 1}).toArray();
         res.json([...knownSensors, ...unknownSensors]);
     } catch (err) {
         res.status(500).json({error: 'Erreur lors de la récupération de tous les capteurs'});
@@ -178,6 +179,20 @@ app.get('/api/sensors/:sensorId/latest', async (req, res) => {
         }
     } catch (err) {
         res.status(500).json({error: 'Erreur lors de la récupération du dernier message du capteur'});
+    }
+});
+
+// Récupérer l'historique de tous les capteurs de type event
+app.get('/api/sensors/events/history', async (req, res) => {
+    try {
+        const events = await db.collection('messages')
+            .find({type: 'event'})
+            .sort({timestamp: 1})
+            .toArray();
+        res.json(events);
+    } catch (err) {
+        console.error('[ERREUR]', err);
+        res.status(500).json({error: 'Erreur lors de la récupération de l\'historique des événements'});
     }
 });
 

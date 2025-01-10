@@ -1,16 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import PeriodSensors from '../components/PeriodSensors';
 import axios from 'axios';
-import { Sensor } from "../models/sensor.ts";
-import { ToastContainer, toast, Bounce } from 'react-toastify';
+import {Sensor} from "../models/sensor.ts";
+import {Bounce, toast, ToastContainer} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { useNavigate } from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 
 const Home: React.FC = () => {
     const [sensors, setSensors] = useState<Sensor[]>([]); // Tous les capteurs récupérés
     const [filteredSensors, setFilteredSensors] = useState<Sensor[]>([]); // Capteurs filtrés
     const [searchTerm, setSearchTerm] = useState<string>(""); // Barre de recherche
-    const [selectedType, setSelectedType] = useState<string>(""); // Filtre par type
     const [selectedRoom, setSelectedRoom] = useState<string>(""); // Filtre par pièce
     const [rooms, setRooms] = useState<string[]>([]); // Liste des pièces disponibles 
 
@@ -62,15 +61,13 @@ const Home: React.FC = () => {
             );
         }
 
-        // Filtrer par type
-        if (selectedType) {
-            filtered = filtered.filter(sensor => sensor.status === selectedType);
-        }
-
         // Filtrer par pièce
         if (selectedRoom) {
             filtered = filtered.filter(sensor => sensor.room === selectedRoom);
         }
+
+        // Trie par statut
+        filtered = filtered.sort((a, b) => a.status.localeCompare(b.status));
 
         setFilteredSensors(filtered);
     };
@@ -126,9 +123,9 @@ const Home: React.FC = () => {
                         if (updatedSensor.type === 'event') {
 
                             const foundSensor = sensors.find(sensor => sensor.sensor_id === updatedSensor.sensor_id);
-                        
-                            const message = foundSensor?.name  + ": " + updatedSensor.value 
-                            toast.warning(message  , {
+
+                            const message = foundSensor?.name + ": " + updatedSensor.value
+                            toast.warning(message, {
                                 position: "top-right",
                                 hideProgressBar: true,
                                 autoClose: false, // Le toast reste ouvert
@@ -138,7 +135,7 @@ const Home: React.FC = () => {
                                 theme: "colored",
                                 transition: Bounce,
                                 toastId: updatedSensor.sensor_id, // Identifiant unique basé sur le capteur
-                                onClick: () => navigate(`/sensors/${updatedSensor.sensor_id}`) 
+                                onClick: () => navigate(`/sensors/${updatedSensor.sensor_id}`)
                             });
                         }
                     }
@@ -162,7 +159,7 @@ const Home: React.FC = () => {
     // Mettre à jour les capteurs filtrés à chaque modification des filtres
     useEffect(() => {
         applyFilters();
-    }, [searchTerm, selectedType, selectedRoom, sensors]);
+    }, [searchTerm, selectedRoom, sensors]);
 
     // Charger les capteurs au montage du composant
     useEffect(() => {
@@ -183,22 +180,6 @@ const Home: React.FC = () => {
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
-                    </div>
-
-                    {/* Filter by Type */}
-                    <div className="flex-grow">
-                        <label htmlFor="typeFilter" className="block text-sm mb-2 text-gray-100">Type :</label>
-                        <select
-                            id="typeFilter"
-                            className="w-full px-4 py-3 rounded-md bg-gray-700 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                            value={selectedType}
-                            onChange={(e) => setSelectedType(e.target.value)}
-                        >
-                            <option value="">Tous</option>
-                            <option value="Active">Active</option>
-                            <option value="Inactive">Inactive</option>
-                            <option value="Error">Error</option>
-                        </select>
                     </div>
 
                     {/* Filter by Room */}
@@ -235,7 +216,7 @@ const Home: React.FC = () => {
                         last_value={sensor.last_value}
                         unit={sensor.unit}
                         type={sensor.type}
-                        
+
                     />
                 ))}
             </main>

@@ -15,8 +15,8 @@ TOPIC = os.getenv("TOPIC", "movement")  # Topic à modifier par capteur
 TYPE = "event"  # type du capteur, "periodic" or "event"
 UNIT = ""  # Unité du capteur
 DELAY_PERIODIC = 5 * 60  # délai en secondes, si capteur de type périodique, par défaut 5 minutes
-DELAY_EVENT_MIN = 3  # délai minimum en secondes, si capteur de type événement, par défaut 3 minutes
-DELAY_EVENT_MAX = 15  # délai maximum en secondes, si capteur de type événement, par défaut 15 minutes
+DELAY_EVENT_MIN = 8  # délai minimum en secondes, si capteur de type événement, par défaut 3 minutes
+DELAY_EVENT_MAX = 30  # délai maximum en secondes, si capteur de type événement, par défaut 15 minutes
 previous_value = None  # valeur précédente, surtout utile pour les capteurs de type événement
 
 # Génération de la valeur simulée
