@@ -5,14 +5,19 @@ interface SelectStartEndDateProps {
     endDate: string;
     setStartDate: (value: string) => void;
     setEndDate: (value: string) => void;
+    isLive: boolean; // État "live" passé depuis le parent
+    setIsLive: (value: boolean) => void; // Fonction pour mettre à jour l'état "live" dans le parent
 }
 
 const SelectStartEndDate: React.FC<SelectStartEndDateProps> = ({
-                                                                   startDate,
-                                                                   endDate,
-                                                                   setStartDate,
-                                                                   setEndDate,
-                                                               }) => {
+    startDate,
+    endDate,
+    setStartDate,
+    setEndDate,
+    isLive,
+    setIsLive,
+}) => {
+
     return (
         <div className="flex space-x-4 mt-6 ">
             <div>
@@ -32,6 +37,17 @@ const SelectStartEndDate: React.FC<SelectStartEndDateProps> = ({
                     onChange={(e) => setEndDate(e.target.value)}
                     className="ml-2 p-2 rounded-md bg-gray-700 text-white"
                 />
+            </div>
+            <div>
+                <label className="text-white">En direct :</label>
+                <button
+                    onClick={(e) => setIsLive(!isLive)}
+                    className={`ml-2 p-2 rounded-md ${
+                        isLive ? "bg-red-900" : "bg-green-900"
+                    } text-white`}
+                >
+                    {isLive ? "Arrêter" : "Démarrer"}
+                </button>
             </div>
         </div>
     );

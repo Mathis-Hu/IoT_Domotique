@@ -34,6 +34,9 @@ const SensorDetails: React.FC = () => {
     const [startDate, setStartDate] = useState<string>(""); // Date de début pour le filtre
     const [endDate, setEndDate] = useState<string>(""); // Date de fin pour le filtre
 
+    const [isLive, setIsLive] = useState<boolean>(true); // `isLive` géré par React
+
+
     // Récupérer les détails du capteur
     const fetchSensor = () => {
         axios.get(`http://localhost:3000/api/sensors/${id}`)
@@ -220,7 +223,7 @@ useEffect(() => {
                             return prevSensor;
                         });
                         return;
-                    } else {
+                    } else if (isLive) {
                         // Ajout de la nouvelle valeur à l'historique
                         const newHistoryEntry = {
                             timestamp: updatedSensor.timestamp,
@@ -250,12 +253,11 @@ useEffect(() => {
         console.log('WebSocket disconnected');
     };
 
-    // Fermer la connexion WebSocket lors du démontage
-    return () => {
-        ws.close();
-    };
-}, [id]);
-
+        // Fermer la connexion WebSocket lors du démontage
+        return () => {
+            ws.close();
+        };
+    }, [id, isLive]);
 
 return (
     <div className="p-6">
@@ -292,13 +294,15 @@ return (
             saveSensor={saveSensor}
         />
 
-        {/* Tableau + Graphique en ligne */}
-        <SelectStartEndDate
-            startDate={startDate}
-            endDate={endDate}
-            setStartDate={setStartDate}
-            setEndDate={setEndDate}
-        />
+            {/* Tableau + Graphique en ligne */}
+            <SelectStartEndDate
+                startDate={startDate}
+                endDate={endDate}
+                setStartDate={setStartDate}
+                setEndDate={setEndDate}
+                isLive={isLive}
+                setIsLive={setIsLive}
+            />
 
 
         <div className="flex lg:flex-nowrap flex-wrap  mt-8 gap-8">
