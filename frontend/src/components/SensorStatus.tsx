@@ -14,7 +14,7 @@ const SensorStatus: React.FC<SensorStatusProps> = ({status, className}) => {
                     }`}
                 ></span>
             <span className="text-sm font-medium text-gray-100">
-                  {status === "connected" ? "Online" : "Offline"}
+                  {status === "connected" ? "En ligne" : "Hors ligne"}
                 </span>
         </div>
     );
