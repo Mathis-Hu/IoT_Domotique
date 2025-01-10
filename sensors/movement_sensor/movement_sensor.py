@@ -21,7 +21,24 @@ previous_value = None  # valeur précédente, surtout utile pour les capteurs de
 
 # Génération de la valeur simulée
 def generate_value():
-    return "Mouvement détecté !"
+    global previous_value, DELAY_EVENT_MIN, DELAY_EVENT_MAX
+    DELAY_EVENT_MIN_temp = DELAY_EVENT_MIN
+    DELAY_EVENT_MAX_temp = DELAY_EVENT_MAX
+    if previous_value == None:
+        value = ""
+        previous_value = value
+
+    if previous_value == "Mouvement détecté !":
+        value = ""
+        DELAY_EVENT_MIN = DELAY_EVENT_MIN_temp
+        DELAY_EVENT_MAX = DELAY_EVENT_MAX_temp
+    else:
+        value = "Mouvement détecté !"
+        DELAY_EVENT_MIN = 1
+        DELAY_EVENT_MAX = 3
+
+    previous_value = value
+    return value
 
     
 

@@ -23,7 +23,7 @@ previous_value = "Fermé"  # valeur précédente, surtout utile pour les capteur
 def generate_value():
     global previous_value
 
-    value = NoneF
+    value = None
 
     if previous_value == "Ouvert":
         value = "Fermé"
